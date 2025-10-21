@@ -6,16 +6,16 @@ import (
 
 // LayoutConfig holds configuration for the main layout
 type LayoutConfig struct {
-	Width            int
-	Height           int
-	ViewMode         string // "column" or "list"
-	SettingsVisible  bool
-	CalendarVisible  bool
-	MainContent      string
-	SettingsPanel    string
-	Calendar         string
-	SettingsButton   string
-	Footer           string
+	Width           int
+	Height          int
+	ViewMode        string // "column" or "list"
+	SettingsVisible bool
+	CalendarVisible bool
+	MainContent     string
+	SettingsPanel   string
+	Calendar        string
+	SettingsButton  string
+	Footer          string
 }
 
 // RenderLayout renders the complete application layout
@@ -93,25 +93,9 @@ func renderLayoutWithSettingsOverlay(config LayoutConfig, contentHeight int) str
 		settingsHeight = 30
 	}
 
-	// Position settings in center
-	leftPadding := (config.Width - settingsWidth) / 2
-	topPadding := (contentHeight - settingsHeight) / 2
-
-	// Create background (dimmed main content)
-	backgroundStyle := lipgloss.NewStyle().
-		Width(config.Width).
-		Height(contentHeight).
-		Foreground(lipgloss.Color("240"))
-
-	background := backgroundStyle.Render(config.MainContent)
-
 	// Overlay settings panel
 	// For simplicity, we'll place it using padding
-	settingsContainer := lipgloss.NewStyle().
-		Width(config.Width).
-		Height(contentHeight).
-		PaddingLeft(leftPadding).
-		PaddingTop(topPadding)
+
 
 	// This is a simplified overlay - in a real implementation,
 	// you'd use lipgloss.Place to properly overlay
@@ -164,10 +148,15 @@ func buildSidebar(config LayoutConfig, width, height int) string {
 	}
 
 	// Join vertically and pad to full height
-	sidebarContent := lipgloss.JoinVertical(lipgloss.Left, elements...)
+	sidebarContent := lipgloss.JoinVertical(lipgloss.Right, elements...)
+
+	contentWidth := width - 2
+	if contentWidth < 0 {
+		contentWidth = 0
+	}
 
 	sidebarStyle := lipgloss.NewStyle().
-		Width(width).
+		Width(contentWidth).
 		Height(height).
 		Padding(0, 1)
 

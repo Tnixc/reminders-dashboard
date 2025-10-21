@@ -115,17 +115,17 @@ func (m model) renderSettingsOverlay(contentHeight int, footer string) string {
 // renderColumnView renders the column/card view
 func (m model) renderColumnView(width, height int) string {
 	columns := getColumns(&m)
-	
+
 	// Debug: show info about what we have
 	if len(m.reminders) == 0 {
 		return renderEmpty(width, height, "No reminders loaded (press 'r' to refresh)")
 	}
-	
+
 	filtered := getFilteredReminders(&m)
 	if len(filtered) == 0 {
 		return renderEmpty(width, height, fmt.Sprintf("No reminders match filter (have %d total, check settings)", len(m.reminders)))
 	}
-	
+
 	if len(columns) == 0 {
 		return renderEmpty(width, height, fmt.Sprintf("No columns to display (%d filtered reminders)", len(filtered)))
 	}
@@ -282,19 +282,10 @@ func (m model) renderColumn(reminders []Reminder, listName string, width, height
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 
-	// Wrap in border with full height
-	borderColor := "240"
-	if focused {
-		borderColor = listColor
-	}
+	cardStyle := lipgloss.NewStyle().
+		Width(width)
 
-	columnStyle := lipgloss.NewStyle().
-		Width(width).
-		Height(height).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color(borderColor))
-
-	return columnStyle.Render(content)
+	return cardStyle.Render(content)
 }
 
 // renderCard renders a single reminder card
@@ -320,7 +311,7 @@ func (m model) renderCard(reminder Reminder, width int, focused bool, listColor 
 	lines = append(lines, titleStyle.Render(title))
 	lines = append(lines, metaStyle.Render(dueText))
 	lines = append(lines, countdownStyle.Render(countdown))
-	
+
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 
 	// Card styling
@@ -343,7 +334,7 @@ func (m model) renderListView(width, height int) string {
 	if len(m.reminders) == 0 {
 		return renderEmpty(width, height, "No reminders loaded (press 'r' to refresh)")
 	}
-	
+
 	filtered := getFilteredReminders(&m)
 
 	if len(filtered) == 0 {
@@ -351,7 +342,7 @@ func (m model) renderListView(width, height int) string {
 	}
 
 	metaStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	
+
 	var lines []string
 
 	// Calculate visible range
@@ -402,7 +393,7 @@ func (m model) renderListView(width, height int) string {
 
 	// Join and style
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
-	
+
 	return content
 }
 
@@ -422,7 +413,7 @@ func (m model) renderSidebar(width, height int) string {
 	calendar := m.renderCalendar(width, calendarHeight)
 
 	// Join sections vertically
-	content := lipgloss.JoinVertical(lipgloss.Left,
+	content := lipgloss.JoinVertical(lipgloss.Right,
 		settingsButton,
 		"",
 		calendar,
@@ -577,7 +568,7 @@ func (m model) renderDaysFilterSection() string {
 		lines = append(lines, line)
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+	return lipgloss.JoinVertical(lipgloss.Right, lines...)
 }
 
 // renderListFilterSection renders the list filter settings
@@ -629,7 +620,7 @@ func (m model) renderListFilterSection() string {
 		lines = append(lines, line)
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+	return lipgloss.JoinVertical(lipgloss.Right, lines...)
 }
 
 // renderColorConfigSection renders the color configuration settings
@@ -683,13 +674,13 @@ func (m model) renderColorConfigSection() string {
 		lines = append(lines, line)
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+	return lipgloss.JoinVertical(lipgloss.Right, lines...)
 }
 
 // renderFooter renders the footer with help text
 func (m model) renderFooter() string {
 	helpText := "tab: view • s: settings • ←/→: columns • ↑/↓: items • r: refresh • q: quit"
-	
+
 	if m.sidebarFocused {
 		helpText = "esc: close • tab: section • space: toggle • 1-9/0: color • ↑/↓: navigate • q: quit"
 	} else if m.viewMode == ListView {
@@ -709,7 +700,7 @@ func (m model) renderFooter() string {
 
 func renderLoading(width, height int) string {
 	content := "Loading reminders..."
-	
+
 	style := lipgloss.NewStyle().
 		Width(width).
 		Height(height).
@@ -721,7 +712,7 @@ func renderLoading(width, height int) string {
 
 func renderError(err error, width, height int) string {
 	content := fmt.Sprintf("Error: %v", err)
-	
+
 	style := lipgloss.NewStyle().
 		Width(width).
 		Height(height).

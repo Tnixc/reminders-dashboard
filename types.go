@@ -49,7 +49,7 @@ type model struct {
 	colorNames        []string          // human-readable color names
 	daysFilter        int               // 0 = all, 7 = next 7 days, etc.
 	daysFilterOptions []int
-	columnOrder       []string          // custom order for columns
+	columnOrder       []string // custom order for columns
 	cursor            int
 	columnCursor      int   // which column is focused in column view
 	scrollOffset      int   // scroll position for list view

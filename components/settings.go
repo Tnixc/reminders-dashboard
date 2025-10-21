@@ -9,18 +9,18 @@ import (
 
 // SettingsConfig holds configuration for the settings panel
 type SettingsConfig struct {
-	Width            int
-	Height           int
-	Visible          bool
-	DaysFilter       int
-	DaysOptions      []int
-	SelectedLists    map[string]bool
-	AvailableLists   []string
-	ListColors       map[string]string
-	AvailableColors  []string
-	ColorNames       []string
-	FocusedSection   int // 0 = days filter, 1 = list filter, 2 = color config
-	CursorPosition   int
+	Width           int
+	Height          int
+	Visible         bool
+	DaysFilter      int
+	DaysOptions     []int
+	SelectedLists   map[string]bool
+	AvailableLists  []string
+	ListColors      map[string]string
+	AvailableColors []string
+	ColorNames      []string
+	FocusedSection  int // 0 = days filter, 1 = list filter, 2 = color config
+	CursorPosition  int
 }
 
 // SettingsSection represents different sections in settings

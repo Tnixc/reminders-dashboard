@@ -9,15 +9,15 @@ import (
 
 // ColumnViewConfig holds configuration for the column view
 type ColumnViewConfig struct {
-	Width          int
-	Height         int
-	Columns        [][]Reminder
-	ColumnNames    []string
-	FocusedColumn  int
-	FocusedItem    int
-	ListColors     map[string]string
-	ScrollOffsets  []int
-	GetCountdown   func(string) (string, int)
+	Width         int
+	Height        int
+	Columns       [][]Reminder
+	ColumnNames   []string
+	FocusedColumn int
+	FocusedItem   int
+	ListColors    map[string]string
+	ScrollOffsets []int
+	GetCountdown  func(string) (string, int)
 }
 
 // RenderColumnView renders the multi-column card layout
@@ -128,7 +128,7 @@ func renderSingleColumn(
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color(listColor)).
-		Width(width - 4).
+		Width(width-4).
 		Padding(0, 1)
 
 	header := headerStyle.Render(columnName)
@@ -176,7 +176,7 @@ func renderSingleColumn(
 	// Footer with item count
 	footerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("245")).
-		Width(width - 4).
+		Width(width-4).
 		Padding(0, 1)
 
 	footer := footerStyle.Render(fmt.Sprintf("%d items", len(reminders)))

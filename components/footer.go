@@ -6,7 +6,7 @@ import (
 
 // FooterConfig holds configuration for the footer
 type FooterConfig struct {
-	Width   int
+	Width    int
 	HelpText string
 }
 
@@ -29,16 +29,16 @@ func GetHelpText(mode string, settingsVisible bool) string {
 			return "esc: close settings • tab: section • space: toggle • ↑/↓: navigate • q: quit"
 		}
 		return "tab: view • s: settings • ←/→: columns • ↑/↓: items • c: calendar • r: refresh • q: quit"
-	
+
 	case "list":
 		if settingsVisible {
 			return "esc: close settings • tab: section • space: toggle • ↑/↓: navigate • q: quit"
 		}
 		return "tab: view • s: settings • ↑/↓: items • c: calendar • r: refresh • q: quit"
-	
+
 	case "settings":
 		return "esc: close • tab: section • space: toggle • 1-9/0: pick color • ↑/↓: navigate • q: quit"
-	
+
 	default:
 		return "tab: view • s: settings • r: refresh • q: quit"
 	}

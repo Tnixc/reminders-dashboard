@@ -58,7 +58,7 @@ func renderCalendarContent(config CalendarConfig) string {
 
 	// Get the first day of the month
 	firstDay := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	
+
 	// Get the last day of the month
 	lastDay := firstDay.AddDate(0, 1, -1)
 
@@ -132,7 +132,7 @@ func RenderMiniCalendar(width, height int, focused bool) string {
 	}
 
 	now := time.Now()
-	
+
 	// Simple mini calendar with just month and current day
 	contentStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("248")).

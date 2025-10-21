@@ -98,19 +98,19 @@ func getFilteredReminders(m *model) []Reminder {
 // getColumns returns reminders grouped by list for column view
 func getColumns(m *model) [][]Reminder {
 	filtered := getFilteredReminders(m)
-	
+
 	// Group reminders by list
 	listMap := make(map[string][]Reminder)
 	for _, r := range filtered {
 		listMap[r.List] = append(listMap[r.List], r)
 	}
-	
+
 	// Get list names that have reminders
 	var availableLists []string
 	for listName := range listMap {
 		availableLists = append(availableLists, listName)
 	}
-	
+
 	// Determine column order
 	var columnOrder []string
 	if len(m.columnOrder) > 0 {
@@ -138,7 +138,7 @@ func getColumns(m *model) [][]Reminder {
 		columnOrder = availableLists
 		sort.Strings(columnOrder)
 	}
-	
+
 	// Build columns in order
 	columns := make([][]Reminder, 0)
 	for _, listName := range columnOrder {
@@ -146,7 +146,7 @@ func getColumns(m *model) [][]Reminder {
 			columns = append(columns, reminders)
 		}
 	}
-	
+
 	return columns
 }
 

@@ -126,7 +126,7 @@ func RenderListView(config ListViewConfig) string {
 
 	// Join lines and pad to fill height
 	result := strings.Join(lines, "\n")
-	
+
 	// Pad with empty lines to fill height
 	currentLines := len(lines)
 	for currentLines < config.Height {
@@ -172,9 +172,8 @@ func RenderCompactList(config ListViewConfig) string {
 
 		// Get countdown info
 		countdown := ""
-		urgency := 999
 		if config.GetCountdown != nil {
-			countdown, urgency = config.GetCountdown(reminder.DueDate)
+			countdown, _ = config.GetCountdown(reminder.DueDate)
 		}
 
 		// Get list color
@@ -209,7 +208,7 @@ func RenderCompactList(config ListViewConfig) string {
 
 	// Join lines and pad to fill height
 	result := strings.Join(lines, "\n")
-	
+
 	// Pad with empty lines to fill height
 	currentLines := len(lines)
 	for currentLines < config.Height {

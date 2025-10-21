@@ -113,7 +113,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Initialize column scrolls
 			columns := getColumns(&m)
 			m.columnScrolls = make([]int, len(columns))
-			
+
 			// Initialize column order if not set
 			if len(m.columnOrder) == 0 {
 				m.columnOrder = getColumnListNames(&m)
@@ -367,7 +367,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.columnOrder = listNames
 					}
 					// Swap with previous
-					m.columnOrder[m.columnCursor], m.columnOrder[m.columnCursor-1] = 
+					m.columnOrder[m.columnCursor], m.columnOrder[m.columnCursor-1] =
 						m.columnOrder[m.columnCursor-1], m.columnOrder[m.columnCursor]
 					m.columnCursor--
 					// Rebuild column scrolls to match new order
@@ -386,7 +386,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if m.columnCursor < len(m.columnOrder)-1 {
 					// Swap with next
-					m.columnOrder[m.columnCursor], m.columnOrder[m.columnCursor+1] = 
+					m.columnOrder[m.columnCursor], m.columnOrder[m.columnCursor+1] =
 						m.columnOrder[m.columnCursor+1], m.columnOrder[m.columnCursor]
 					m.columnCursor++
 					// Rebuild column scrolls to match new order
@@ -424,7 +424,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					case "0":
 						colorIdx = 9
 					}
-					
+
 					if colorIdx >= 0 && colorIdx < len(m.availableColors) {
 						listName := m.availableLists[m.sidebarCursor]
 						m.listColors[listName] = m.availableColors[colorIdx]

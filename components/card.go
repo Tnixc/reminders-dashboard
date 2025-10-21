@@ -1,7 +1,6 @@
 package components
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -52,7 +51,6 @@ func RenderCard(reminder Reminder, style CardStyle, countdown string, urgency in
 	// Styles
 	titleStyle := lipgloss.NewStyle().Bold(true)
 	metaStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	listStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(style.ListColor))
 	urgencyColor := getUrgencyColor(urgency)
 	countdownStyle := lipgloss.NewStyle().Foreground(urgencyColor)
 
