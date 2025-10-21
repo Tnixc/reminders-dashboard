@@ -43,6 +43,8 @@ func initialModel() model {
 		daysFilterOptions: []int{0, 1, 3, 7, 14, 30},
 		columnOrder:       config.ColumnOrder,
 		columnScrolls:     make([]int, 0),
+		width:             80, // Default terminal width
+		height:            24, // Default terminal height
 		loading:           true,
 		configPath:        configPath,
 	}
