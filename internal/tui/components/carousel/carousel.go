@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
 )
 
 // Model defines a state for the carousel widget.

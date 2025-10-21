@@ -14,12 +14,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	log "github.com/charmbracelet/log"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/config"
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/section"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/markdown"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/section"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/markdown"
 )
 
 func (m *Model) getCurrSection() section.Section {

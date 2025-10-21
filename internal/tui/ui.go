@@ -19,19 +19,19 @@ import (
 	"github.com/cli/go-gh/v2/pkg/browser"
 	zone "github.com/lrstanley/bubblezone"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/config"
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/common"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/footer"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/reminderssection"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/section"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/sidebar"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/tabs"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/keys"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/theme"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/footer"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/reminderssection"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/section"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/sidebar"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/tabs"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/keys"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/theme"
 )
 
 type Model struct {

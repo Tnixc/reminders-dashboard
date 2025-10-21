@@ -21,12 +21,12 @@ import (
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/config"
-	"github.com/dlvhdr/gh-dash/v4/internal/git"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
-	dctx "github.com/dlvhdr/gh-dash/v4/internal/tui/context"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/markdown"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/git"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
+	dctx "github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/markdown"
 )
 
 var (
@@ -45,13 +45,13 @@ var (
 		Use: "gh dash",
 		Long: lipgloss.JoinVertical(lipgloss.Left, logo.Render(),
 			"A rich terminal UI for GitHub that doesn't break your flow.",
-			"Visit https://gh-dash.dev for the docs."),
+			"Visit https://reminders-dashboard.dev for the docs."),
 		Short:   "A rich terminal UI for GitHub that doesn't break your flow.",
 		Version: "",
 		Example: `
 # Running without arguments will either:
 #   - Use the global configuration file
-#   - Use a local .gh-dash.yml file if in a git repo
+#   - Use a local .reminders-dashboard.yml file if in a git repo
 gh dash
 
 # Run with a specific configuration file
@@ -129,9 +129,9 @@ func init() {
 		"",
 		`use this configuration file
 (default lookup:
-  1. a .gh-dash.yml file if inside a git repo
+  1. a .reminders-dashboard.yml file if inside a git repo
   2. $GH_DASH_CONFIG env var
-  3. $XDG_CONFIG_HOME/gh-dash/config.yml
+  3. $XDG_CONFIG_HOME/reminders-dashboard/config.yml
 )`,
 	)
 	err := rootCmd.MarkPersistentFlagFilename("config", "yaml", "yml")
@@ -140,7 +140,7 @@ func init() {
 	}
 
 	rootCmd.Version = buildVersion(Version, Commit, Date, BuiltBy)
-	rootCmd.SetVersionTemplate(`gh-dash {{printf "version %s\n" .Version}}`)
+	rootCmd.SetVersionTemplate(`reminders-dashboard {{printf "version %s\n" .Version}}`)
 
 	rootCmd.Flags().Bool(
 		"debug",
@@ -158,7 +158,7 @@ func init() {
 		"help",
 		"h",
 		false,
-		"help for gh-dash",
+		"help for reminders-dashboard",
 	)
 
 	rootCmd.Run = func(_ *cobra.Command, args []string) {

@@ -9,9 +9,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/common"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
 )
 
 func (m *Model) checkout() (tea.Cmd, error) {

@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/common"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
 )
 
 var defaultStyle = lipgloss.NewStyle().PaddingLeft(1).PaddingRight(1)

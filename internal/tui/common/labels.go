@@ -3,7 +3,7 @@ package common
 import (
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
 )
 
 func RenderLabels(sidebarWidth int, labels []data.Label, pillStyle lipgloss.Style) string {

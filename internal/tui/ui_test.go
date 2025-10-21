@@ -16,10 +16,10 @@ import (
 	gh "github.com/cli/go-gh/v2/pkg/api"
 	zone "github.com/lrstanley/bubblezone"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/config"
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/markdown"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/testutils"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/markdown"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/testutils"
 )
 
 func TestFullOutput(t *testing.T) {
@@ -58,7 +58,7 @@ func TestIssues(t *testing.T) {
 
 func setupTest(t *testing.T) {
 	if _, debug := os.LookupEnv("DEBUG"); debug {
-		f, _ := os.CreateTemp("", "gh-dash-debug.log")
+		f, _ := os.CreateTemp("", "reminders-dashboard-debug.log")
 		fmt.Printf("[DEBU] writing debug logs to %s\n", f.Name())
 		defer f.Close()
 		log.SetOutput(f)

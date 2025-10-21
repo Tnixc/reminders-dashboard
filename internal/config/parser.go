@@ -13,7 +13,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/utils"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/utils"
 )
 
 const DashDir = "reminders-dashboard"
@@ -278,7 +278,7 @@ Create one under: %s
 Example of a config.toml file:
 %s
 
-For more info, go to https://github.com/dlvhdr/gh-dash
+For more info, go to https://github.com/dlvhdr/reminders-dashboard
 press q to exit.
 
 Original error: %v`,

@@ -9,7 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
 )
 
 type Model struct {

@@ -3,8 +3,8 @@ package common
 import (
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/theme"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/theme"
 )
 
 var (

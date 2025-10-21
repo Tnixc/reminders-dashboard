@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// See https://www.gh-dash.dev/configuration/#_top
+// See https://www.reminders-dashboard.dev/configuration/#_top
 //  1. get default config file or create it if it's missing
 //     1.1. try GH_DASH_CONFIG
 //     1.2. then check if we're in a git repo

@@ -7,13 +7,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/common"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/carousel"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/section"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
-	"github.com/dlvhdr/gh-dash/v4/internal/utils"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/carousel"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/section"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/utils"
 )
 
 type SectionTab struct {

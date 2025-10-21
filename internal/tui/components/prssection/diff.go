@@ -5,7 +5,7 @@ import (
 	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
 )
 
 func (m Model) diff() tea.Cmd {

@@ -3,8 +3,8 @@ package branch
 import (
 	"time"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
-	"github.com/dlvhdr/gh-dash/v4/internal/git"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/git"
 )
 
 type BranchData struct {

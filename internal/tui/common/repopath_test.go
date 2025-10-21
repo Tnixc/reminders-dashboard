@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/common"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
 )
 
 var configPaths = map[string]string{

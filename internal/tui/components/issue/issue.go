@@ -6,11 +6,11 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/table"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
-	"github.com/dlvhdr/gh-dash/v4/internal/utils"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/table"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/utils"
 )
 
 type Issue struct {

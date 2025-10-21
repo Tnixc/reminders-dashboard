@@ -5,8 +5,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/config"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/theme"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/theme"
 )
 
 type State = int

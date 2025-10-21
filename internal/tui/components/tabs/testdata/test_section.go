@@ -3,11 +3,11 @@ package testdata
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/config"
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/section"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/table"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/section"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/table"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
 )
 
 type TestSection struct {

@@ -26,7 +26,7 @@ func FetchLatestVersion() (VersionResponse, error) {
 
 	variables := map[string]any{
 		"owner": graphql.String("dlvhdr"),
-		"name":  graphql.String("gh-dash"),
+		"name":  graphql.String("reminders-dashboard"),
 	}
 
 	log.Debug("Fetching latest version")

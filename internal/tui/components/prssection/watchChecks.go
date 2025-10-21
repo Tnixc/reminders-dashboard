@@ -9,11 +9,11 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/gen2brain/beeep"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/data"
-	prComponent "github.com/dlvhdr/gh-dash/v4/internal/tui/components/pr"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/tasks"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	prComponent "github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/pr"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/tasks"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
 )
 
 func (m *Model) watchChecks() tea.Cmd {
@@ -74,7 +74,7 @@ func (m *Model) watchChecks() tea.Cmd {
 			}
 
 			err = beeep.Notify(
-				fmt.Sprintf("gh-dash: %s", title),
+				fmt.Sprintf("reminders-dashboard: %s", title),
 				fmt.Sprintf("PR #%d in %s\n%s", prNumber, repoNameWithOwner, checksRollup),
 				"",
 			)

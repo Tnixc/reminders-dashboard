@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/theme"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/theme"
 )
 
 type Reminder struct {

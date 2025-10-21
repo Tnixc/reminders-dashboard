@@ -11,12 +11,12 @@ import (
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/muesli/termenv"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/config"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/section"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/tabs/testdata"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/testutils"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/theme"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/section"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/tabs/testdata"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/testutils"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/theme"
 )
 
 func TestTabs(t *testing.T) {

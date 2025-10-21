@@ -10,10 +10,10 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/common"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/components/listviewport"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/constants"
-	"github.com/dlvhdr/gh-dash/v4/internal/tui/context"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/listviewport"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
 )
 
 type Model struct {

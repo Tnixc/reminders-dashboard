@@ -11,7 +11,7 @@ import (
 
 	gitm "github.com/aymanbagabas/git-module"
 
-	"github.com/dlvhdr/gh-dash/v4/internal/utils"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/utils"
 )
 
 // Extends git.Repository
