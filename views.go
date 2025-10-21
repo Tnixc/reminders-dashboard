@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/76creates/stickers/flexbox"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -19,7 +20,7 @@ func (m *model) getContentHeight() int {
 	return m.height - 1 // minus footer
 }
 
-// View renders the entire application UI
+// View renders the entire application UI using flexbox
 func (m model) View() string {
 	// Handle special states
 	if m.loading {
@@ -29,37 +30,32 @@ func (m model) View() string {
 		return renderError(m.err, m.width, m.height)
 	}
 
-	// Calculate dimensions - reserve space for padding, footer
-	topPadding := 3
-	contentHeight := m.height - topPadding - 1 // Reserve 5 lines for top padding, 1 for footer
-	if contentHeight < 1 {
-		contentHeight = 1
-	}
-
-	// Render footer
-	footer := m.renderFooter()
-
-	// Add top padding
-	var paddingLines []string
-	for i := 0; i < topPadding; i++ {
-		paddingLines = append(paddingLines, "")
-	}
-	topPaddingStr := lipgloss.JoinVertical(lipgloss.Left, paddingLines...)
-
 	// If settings panel is open, render overlay layout
 	if m.sidebarFocused {
-		content := m.renderSettingsOverlay(contentHeight, footer)
-		return lipgloss.JoinVertical(lipgloss.Left, topPaddingStr, content)
+		return m.renderSettingsOverlay()
 	}
 
-	// Normal layout: main content + sidebar
-	content := m.renderNormalLayout(contentHeight, footer)
-	return lipgloss.JoinVertical(lipgloss.Left, topPaddingStr, content)
+	// Normal layout: render using flexbox
+	return m.renderNormalLayout()
 }
 
-// renderNormalLayout renders the default layout with sidebar
-func (m model) renderNormalLayout(contentHeight int, footer string) string {
-	// Calculate sidebar width - make it twice as wide
+// renderNormalLayout renders the default layout with flexbox
+func (m model) renderNormalLayout() string {
+	// Create new flexbox for this render
+	styleBackground := lipgloss.NewStyle().Align(lipgloss.Center)
+	flex := flexbox.New(m.width, m.height).SetStyle(styleBackground)
+
+	// Create three rows: top padding, content, footer
+	topPadding := 0
+	footerHeight := 1
+	contentHeight := m.height - topPadding - footerHeight
+
+	// Row 1: Top padding
+	paddingRow := flex.NewRow().AddCells(
+		flexbox.NewCell(1, topPadding).SetContent(""),
+	)
+
+	// Row 2: Main content (main view + sidebar)
 	sidebarWidth := 48
 	if m.width < 120 {
 		sidebarWidth = 40
@@ -73,7 +69,7 @@ func (m model) renderNormalLayout(contentHeight int, footer string) string {
 
 	mainWidth := m.width - sidebarWidth
 
-	// Render main content (column view or list view)
+	// Create main content
 	var mainContent string
 	if m.viewMode == ColumnView {
 		mainContent = m.renderColumnView(mainWidth, contentHeight)
@@ -81,46 +77,135 @@ func (m model) renderNormalLayout(contentHeight int, footer string) string {
 		mainContent = m.renderListView(mainWidth, contentHeight)
 	}
 
-	// Render sidebar
-	sidebar := m.renderSidebar(sidebarWidth, contentHeight)
+	// Create sidebar content
+	sidebarContent := m.renderSidebar(sidebarWidth, contentHeight)
 
-	// Insert flexible spacer so the sidebar hugs the right edge
-	mainActualWidth := lipgloss.Width(mainContent)
-	sidebarActualWidth := lipgloss.Width(sidebar)
-	spacerWidth := m.width - mainActualWidth - sidebarActualWidth
-	if spacerWidth < 0 {
-		spacerWidth = 0
+	// Main content row with two cells
+	contentRow := flex.NewRow().AddCells(
+		flexbox.NewCell(mainWidth, contentHeight).SetContent(mainContent),
+		flexbox.NewCell(sidebarWidth, contentHeight).SetContent(sidebarContent),
+	)
+
+	// Row 3: Footer
+	footerContent := m.renderFooter()
+	footerRow := flex.NewRow().AddCells(
+		flexbox.NewCell(1, footerHeight).SetContent(footerContent),
+	)
+
+	// Add all rows to flexbox
+	flex.AddRows([]*flexbox.Row{paddingRow, contentRow, footerRow})
+
+	// Force recalculate and render
+	flex.ForceRecalculate()
+	return flex.Render()
+}
+
+// renderSettingsOverlay renders the settings panel overlay using flexbox
+func (m model) renderSettingsOverlay() string {
+	// Create new flexbox for this render
+	styleBackground := lipgloss.NewStyle().Align(lipgloss.Center)
+	flex := flexbox.New(m.width, m.height).SetStyle(styleBackground)
+
+	topPadding := 3
+	footerHeight := 1
+	contentHeight := m.height - topPadding - footerHeight
+
+	// Row 1: Top padding
+	paddingRow := flex.NewRow().AddCells(
+		flexbox.NewCell(1, topPadding).SetContent(""),
+	)
+
+	// Row 2: Main content with overlay
+	// Background content (main view + sidebar)
+	sidebarWidth := 48
+	if m.width < 120 {
+		sidebarWidth = 40
 	}
-	spacer := strings.Repeat(" ", spacerWidth)
+	mainWidth := m.width - sidebarWidth
 
-	content := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		mainContent,
-		spacer,
-		sidebar,
-	)
+	var mainContent string
+	if m.viewMode == ColumnView {
+		mainContent = m.renderColumnView(mainWidth, contentHeight)
+	} else {
+		mainContent = m.renderListView(mainWidth, contentHeight)
+	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, content, footer)
-}
+	sidebarContent := m.renderSidebar(sidebarWidth, contentHeight)
+	
+	// Combine background
+	background := lipgloss.JoinHorizontal(lipgloss.Top, mainContent, sidebarContent)
 
-// renderSettingsOverlay renders settings as an overlay
-func (m model) renderSettingsOverlay(contentHeight int, footer string) string {
-	// Render settings panel
+	// Settings panel (centered overlay)
 	settingsPanel := m.renderSettingsPanel()
+	
+	// Calculate overlay position
+	panelWidth := lipgloss.Width(settingsPanel)
+	panelHeight := lipgloss.Height(settingsPanel)
+	
+	leftPadding := (m.width - panelWidth) / 2
+	topOverlayPadding := (contentHeight - panelHeight) / 2
+	
+	if leftPadding < 0 {
+		leftPadding = 0
+	}
+	if topOverlayPadding < 0 {
+		topOverlayPadding = 0
+	}
 
-	// Overlay settings in center without background fill; allow up to 90% width
-	content := lipgloss.Place(
-		m.width,
-		contentHeight,
-		lipgloss.Center,
-		lipgloss.Center,
-		lipgloss.NewStyle().MaxWidth((m.width*9)/10).Render(settingsPanel),
+	// Create overlay by positioning the settings panel
+	var overlayLines []string
+	backgroundLines := strings.Split(background, "\n")
+	settingsPanelLines := strings.Split(settingsPanel, "\n")
+
+	for i := 0; i < contentHeight; i++ {
+		if i >= topOverlayPadding && i < topOverlayPadding+panelHeight {
+			// Overlay the settings panel
+			settingsLineIdx := i - topOverlayPadding
+			if settingsLineIdx < len(settingsPanelLines) {
+				line := ""
+				if i < len(backgroundLines) {
+					bgLine := backgroundLines[i]
+					if len(bgLine) > leftPadding {
+						line = bgLine[:leftPadding]
+					} else {
+						line = bgLine + strings.Repeat(" ", leftPadding-len(bgLine))
+					}
+				} else {
+					line = strings.Repeat(" ", leftPadding)
+				}
+				line += settingsPanelLines[settingsLineIdx]
+				// Fill the rest of the line
+				currentLen := lipgloss.Width(line)
+				if currentLen < m.width {
+					line += strings.Repeat(" ", m.width-currentLen)
+				}
+				overlayLines = append(overlayLines, line)
+			} else if i < len(backgroundLines) {
+				overlayLines = append(overlayLines, backgroundLines[i])
+			}
+		} else if i < len(backgroundLines) {
+			overlayLines = append(overlayLines, backgroundLines[i])
+		}
+	}
+
+	overlayContent := strings.Join(overlayLines, "\n")
+
+	contentRow := flex.NewRow().AddCells(
+		flexbox.NewCell(1, contentHeight).SetContent(overlayContent),
 	)
 
-	return lipgloss.JoinVertical(lipgloss.Left, content, footer)
+	// Row 3: Footer
+	footerContent := m.renderFooter()
+	footerRow := flex.NewRow().AddCells(
+		flexbox.NewCell(1, footerHeight).SetContent(footerContent),
+	)
+
+	flex.AddRows([]*flexbox.Row{paddingRow, contentRow, footerRow})
+	flex.ForceRecalculate()
+	return flex.Render()
 }
 
-// renderColumnView renders the column/card view
+// renderColumnView renders the column view
 func (m model) renderColumnView(width, height int) string {
 	columns := getColumns(&m)
 
@@ -211,9 +296,7 @@ func (m model) renderColumn(reminders []Reminder, listName string, width, height
 	header := headerStyle.Render(listName) + " " + countStyle.Render(fmt.Sprintf("(%d)", len(reminders)))
 
 	// Calculate visible cards
-	// Each card: border(2) + title(1) + due(1) + countdown(1) = 5 lines
 	linesPerCard := 5
-	// Column overhead: header(1) + blank after header(1) + footer(1) = 3 lines
 	columnOverhead := 3
 
 	availableHeight := height - columnOverhead
@@ -290,7 +373,7 @@ func (m model) renderColumn(reminders []Reminder, listName string, width, height
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 
-	// Column styling with square border - no change on focus
+	// Column styling with square border
 	columnStyle := lipgloss.NewStyle().
 		Width(width).
 		Border(lipgloss.NormalBorder()).
@@ -303,7 +386,7 @@ func (m model) renderColumn(reminders []Reminder, listName string, width, height
 func (m model) renderCard(reminder Reminder, width int, focused bool, listColor string) string {
 	countdown, urgency := getCountdown(reminder.DueDate)
 	urgencyColor := getUrgencyColor(urgency)
-	
+
 	// Title with fixed width to prevent layout shifts
 	cursor := "  "
 	titleColor := lipgloss.Color("255")
@@ -311,11 +394,11 @@ func (m model) renderCard(reminder Reminder, width int, focused bool, listColor 
 		cursor = "▸ "
 		titleColor = lipgloss.Color(listColor)
 	}
-	
+
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(titleColor)
-	
+
 	title := cursor + reminder.Title
 
 	// Due date with subtle styling
@@ -340,7 +423,57 @@ func (m model) renderCard(reminder Reminder, width int, focused bool, listColor 
 	return content
 }
 
-// renderListView renders the compact list view with table-style alignment
+// updateTableData updates the table with current filtered reminders
+func (m *model) updateTableData() {
+	filtered := getFilteredReminders(m)
+
+	// Clear existing rows
+	m.table.ClearRows()
+
+	rows := make([][]any, 0, len(filtered))
+	for _, reminder := range filtered {
+		countdown, urgency := getCountdown(reminder.DueDate)
+		dueText := formatDueDate(reminder.DueDate)
+
+		// Get list color
+		listColor := "248"
+		if color, exists := m.listColors[reminder.List]; exists {
+			listColor = color
+		}
+
+		// Create badge for list
+		listName := reminder.List
+		if len(listName) > 11 {
+			listName = listName[:10] + "…"
+		}
+
+		badgeStyle := lipgloss.NewStyle().
+			Background(lipgloss.Color(listColor)).
+			Foreground(lipgloss.Color("0")).
+			Bold(true).
+			Padding(0, 1)
+
+		listBadge := badgeStyle.Render(listName)
+
+		// Style countdown with urgency color
+		urgencyColor := getUrgencyColor(urgency)
+		countdownStyle := lipgloss.NewStyle().
+			Foreground(urgencyColor).
+			Bold(true)
+		countdownText := countdownStyle.Render(countdown)
+
+		rows = append(rows, []any{
+			reminder.Title,
+			listBadge,
+			countdownText,
+			dueText,
+		})
+	}
+
+	m.table.AddRows(rows)
+}
+
+// renderListView renders the list view using stickers table component
 func (m model) renderListView(width, height int) string {
 	// Debug: show info about what we have
 	if len(m.reminders) == 0 {
@@ -353,159 +486,88 @@ func (m model) renderListView(width, height int) string {
 		return renderEmpty(width, height, fmt.Sprintf("No reminders match filter (have %d total, check settings 's')", len(m.reminders)))
 	}
 
-	var lines []string
+	// Update table data
+	m.updateTableData()
+
+	// Set table dimensions
+	tableWidth := width - 6
+	tableHeight := height - 6
+
+	if tableWidth < 40 {
+		tableWidth = 40
+	}
+	if tableHeight < 5 {
+		tableHeight = 5
+	}
+
+	m.table.SetWidth(tableWidth)
+	m.table.SetHeight(tableHeight)
 
 	// Add header
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("183"))
-	
-	lines = append(lines, headerStyle.Render(fmt.Sprintf("All Reminders (%d)", len(filtered))))
+		Foreground(lipgloss.Color("255"))
 
-	// Define fixed column widths for table layout
-	contentWidth := width - 4
-	cursorWidth := 2
-	titleWidth := 30 // Fixed reasonable width for title
-	if titleWidth > contentWidth-40 {
-		titleWidth = contentWidth - 40
-	}
-	if titleWidth < 15 {
-		titleWidth = 15
-	}
-	listWidth := 15 // Increased width for badges
-	countdownWidth := 10
+	header := headerStyle.Render(fmt.Sprintf("# Reminders (%d)", len(filtered)))
 
-	// Add table header
-	headerRowStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245")).
-		Bold(true)
-	
-	headerRow := fmt.Sprintf("%-*s  %-*s  %-*s  %s",
-		titleWidth+cursorWidth, "Title",
-		listWidth, "List",
-		countdownWidth, "Countdown",
-		"Due Date")
-	lines = append(lines, headerRowStyle.Render(headerRow))
-	
-	// Add separator
-	separatorStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("237"))
-	lines = append(lines, separatorStyle.Render(strings.Repeat("─", contentWidth)))
+	// Render table
+	tableView := m.table.Render()
 
-	// Calculate visible range (adjust for header)
-	adjustedHeight := height - 4 // Account for header, table header, separator
-	visibleStart := m.scrollOffset
-	visibleEnd := m.scrollOffset + adjustedHeight
+	// Combine header and table
+	content := lipgloss.JoinVertical(lipgloss.Left,
+		header,
+		"",
+		tableView,
+	)
 
-	for i, reminder := range filtered {
-		if i < visibleStart {
-			continue
-		}
-		if i >= visibleEnd {
-			break
-		}
-
-		// Get info
-		countdown, urgency := getCountdown(reminder.DueDate)
-		urgencyColor := getUrgencyColor(urgency)
-
-		listColor := "248"
-		if color, exists := m.listColors[reminder.List]; exists {
-			listColor = color
-		}
-
-		// Create badge-style list display with colored background
-		badgeStyle := lipgloss.NewStyle().
-			Background(lipgloss.Color(listColor)).
-			Foreground(lipgloss.Color("0")).
-			Bold(true).
-			Padding(0, 1)
-		
-		// Truncate list name if too long for badge
-		listName := reminder.List
-		if len(listName) > listWidth-3 {
-			listName = listName[:listWidth-4] + "…"
-		}
-		listBadge := badgeStyle.Render(listName)
-	
-		countdownStyle := lipgloss.NewStyle().
-			Foreground(urgencyColor).
-			Bold(true)
-
-		countdownText := countdownStyle.Render(countdown)
-
-		dueText := formatDueDate(reminder.DueDate)
-		dueStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("245")).
-			Italic(true)
-
-		// Truncate title if too long
-		title := reminder.Title
-		if len(title) > titleWidth {
-			title = title[:titleWidth-3] + "..."
-		}
-
-		// Build table row with fixed widths
-		cursor := "  "
-		titleColor := lipgloss.Color("255")
-		
-		if i == m.cursor {
-			cursor = "> "
-			titleColor = lipgloss.Color("183")
-		}
-
-		titleStyle := lipgloss.NewStyle().
-			Foreground(titleColor).
-			Bold(i == m.cursor)
-
-		// Format as fixed-width table row
-		// Note: we need to account for the badge rendering width separately
-		row := fmt.Sprintf("%s%-*s  %s%s  %-*s  %s",
-			cursor,
-			titleWidth, titleStyle.Render(title),
-			listBadge,
-			strings.Repeat(" ", listWidth-len(listName)-2), // Adjust spacing after badge
-			countdownWidth, countdownText,
-			dueStyle.Render(dueText))
-
-		lines = append(lines, row)
-	}
-
-	// Join and style
-	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
-
-	// Add overall border - never changes
+	// Add overall border
 	containerStyle := lipgloss.NewStyle().
 		Width(width - 2).
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("237"))
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		Padding(0, 1)
 
 	return containerStyle.Render(content)
 }
 
-// renderSidebar renders the sidebar with settings button and calendar
+// renderSidebar renders the sidebar with settings button and calendar using flexbox
 func (m model) renderSidebar(width, height int) string {
+	// Create a temporary flexbox for sidebar layout
+	sidebarFlex := flexbox.New(width, height)
+
 	// Calculate heights for sections
 	settingsButtonHeight := 9
-	// Account for blank line between sections
-	calendarHeight := height - settingsButtonHeight - 2
+	blankHeight := 1
+	calendarHeight := height - settingsButtonHeight - blankHeight
 
 	if calendarHeight < 8 {
 		calendarHeight = 8
-		settingsButtonHeight = height - calendarHeight - 2
+		settingsButtonHeight = height - calendarHeight - blankHeight
 	}
 
-	settingsButton := m.renderSettingsButton(width-4, settingsButtonHeight)
-	calendar := m.renderCalendar(width-4, calendarHeight)
+	// Create settings button content
+	settingsContent := m.renderSettingsButton(width, settingsButtonHeight)
 
-	// Join sections vertically
-	content := lipgloss.JoinVertical(lipgloss.Right,
-		settingsButton,
-		"",
-		calendar,
+	// Create calendar content
+	calendarContent := m.renderCalendar(width, calendarHeight)
+
+	// Create rows for sidebar
+	settingsRow := sidebarFlex.NewRow().AddCells(
+		flexbox.NewCell(1, settingsButtonHeight).SetContent(settingsContent),
 	)
 
-	return content
+	blankRow := sidebarFlex.NewRow().AddCells(
+		flexbox.NewCell(1, blankHeight).SetContent(""),
+	)
+
+	calendarRow := sidebarFlex.NewRow().AddCells(
+		flexbox.NewCell(1, calendarHeight).SetContent(calendarContent),
+	)
+
+	sidebarFlex.AddRows([]*flexbox.Row{settingsRow, blankRow, calendarRow})
+	sidebarFlex.ForceRecalculate()
+
+	return sidebarFlex.Render()
 }
 
 // renderSettingsButton renders the settings button
@@ -587,7 +649,7 @@ func (m model) renderSettingsPanel() string {
 	content += m.renderListFilterSection() + "\n"
 	content += m.renderColorConfigSection()
 
-	// Panel styling with square border - never changes
+	// Panel styling with square border
 	panelStyle := lipgloss.NewStyle().
 		Width(panelWidth).
 		Height(panelHeight).
@@ -614,9 +676,9 @@ func (m model) renderDaysFilterSection() string {
 
 	sectionHeader := "Days Filter"
 	if m.sidebarSection == SidebarDaysFilter {
-		lines = append(lines, focusedStyle.Render("> " + sectionHeader))
+		lines = append(lines, focusedStyle.Render("> "+sectionHeader))
 	} else {
-		lines = append(lines, titleStyle.Render("  " + sectionHeader))
+		lines = append(lines, titleStyle.Render("  "+sectionHeader))
 	}
 
 	for i, days := range m.daysFilterOptions {
@@ -638,12 +700,12 @@ func (m model) renderDaysFilterSection() string {
 			check = "(x)"
 			checkColor = lipgloss.Color("141")
 		}
-		
+
 		checkStyle := lipgloss.NewStyle().
 			Foreground(checkColor)
 
 		line := fmt.Sprintf("%s%s %s", cursor, checkStyle.Render(check), label)
-		
+
 		if m.sidebarSection == SidebarDaysFilter && m.sidebarCursor == i {
 			line = focusedStyle.Render(line)
 		} else {
@@ -673,9 +735,9 @@ func (m model) renderListFilterSection() string {
 
 	sectionHeader := "List Filter"
 	if m.sidebarSection == SidebarListFilter {
-		lines = append(lines, focusedStyle.Render("> " + sectionHeader))
+		lines = append(lines, focusedStyle.Render("> "+sectionHeader))
 	} else {
-		lines = append(lines, titleStyle.Render("  " + sectionHeader))
+		lines = append(lines, titleStyle.Render("  "+sectionHeader))
 	}
 
 	for i, listName := range m.availableLists {
@@ -692,12 +754,12 @@ func (m model) renderListFilterSection() string {
 			check = "[x]"
 			checkColor = lipgloss.Color("48")
 		}
-		
+
 		checkStyle := lipgloss.NewStyle().
 			Foreground(checkColor)
 
 		line := fmt.Sprintf("%s%s %s", cursor, checkStyle.Render(check), listName)
-		
+
 		if m.sidebarSection == SidebarListFilter && m.sidebarCursor == i {
 			line = focusedStyle.Render(line)
 		} else {
@@ -731,14 +793,14 @@ func (m model) renderColorConfigSection() string {
 	// Header + instructions
 	sectionHeader := "List Colors"
 	if m.sidebarSection == SidebarColorConfig {
-		lines = append(lines, focusedStyle.Render("> " + sectionHeader))
+		lines = append(lines, focusedStyle.Render("> "+sectionHeader))
 		if m.colorPickerActive {
 			lines = append(lines, instructionStyle.Render("  1-9/0: color, esc: cancel"))
 		} else {
 			lines = append(lines, instructionStyle.Render("  enter: pick, 1-9/0: color"))
 		}
 	} else {
-		lines = append(lines, titleStyle.Render("  " + sectionHeader))
+		lines = append(lines, titleStyle.Render("  "+sectionHeader))
 	}
 
 	// Lists with color indicators
@@ -756,11 +818,11 @@ func (m model) renderColorConfigSection() string {
 
 		// Fixed width cursor to prevent layout shifts
 		cursor := "  "
-		
+
 		if m.sidebarSection == SidebarColorConfig && m.sidebarCursor == i {
 			cursor = "> "
 		}
-		
+
 		// Show selection indicator when active
 		suffix := "  "
 		if m.colorPickerActive && m.colorPickerList == i {
@@ -768,7 +830,7 @@ func (m model) renderColorConfigSection() string {
 		}
 
 		line := fmt.Sprintf("%s%s %s%s", cursor, indicator, listName, suffix)
-		
+
 		if m.sidebarSection == SidebarColorConfig && m.sidebarCursor == i {
 			line = focusedStyle.Render(line)
 		} else {
@@ -781,7 +843,7 @@ func (m model) renderColorConfigSection() string {
 	// Color palette
 	if len(m.availableColors) > 0 {
 		lines = append(lines, "")
-		
+
 		paletteHeaderStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("183"))
 		lines = append(lines, paletteHeaderStyle.Render("  Colors"))
@@ -812,13 +874,13 @@ func (m model) renderColorConfigSection() string {
 				Foreground(lipgloss.Color("248"))
 
 			swatch := swatchStyle.Render("██")
-			
+
 			// Add selection indicator with fixed width
 			suffix := "  "
 			if m.colorPickerActive && m.colorPickerCursor == i {
 				suffix = " <"
 			}
-			
+
 			item := fmt.Sprintf("  %s %s %s%s", keyStyle.Render(key), swatch, nameStyle.Render(name), suffix)
 
 			lines = append(lines, item)

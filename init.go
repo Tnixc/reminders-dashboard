@@ -1,5 +1,11 @@
 package main
 
+import (
+	"github.com/76creates/stickers/flexbox"
+	"github.com/76creates/stickers/table"
+	"github.com/charmbracelet/lipgloss"
+)
+
 // initialModel creates and returns the initial application model
 func initialModel() model {
 	// Define color palette
@@ -31,6 +37,20 @@ func initialModel() model {
 	configPath := getConfigPath()
 	config := loadConfig(configPath)
 
+	// Initialize flexbox for layout management
+	styleBackground := lipgloss.NewStyle().Align(lipgloss.Center)
+	flexBox := flexbox.New(80, 24).SetStyle(styleBackground)
+
+	// Initialize stickers table component
+	headers := []string{"Title", "List", "Countdown", "Due Date"}
+	t := table.NewTable(0, 0, headers)
+	
+	// Set table ratios and minimum widths
+	ratio := []int{6, 3, 2, 2}
+	minSize := []int{20, 10, 10, 10}
+	t.SetRatio(ratio).SetMinWidth(minSize)
+	t.SetStylePassing(true)
+
 	return model{
 		viewMode:          ColumnView,
 		sidebarSection:    SidebarDaysFilter,
@@ -47,5 +67,7 @@ func initialModel() model {
 		height:            24, // Default terminal height
 		loading:           true,
 		configPath:        configPath,
+		flexBox:           flexBox,
+		table:             t,
 	}
 }

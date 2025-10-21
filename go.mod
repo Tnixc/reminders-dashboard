@@ -3,6 +3,7 @@ module home
 go 1.25.1
 
 require (
+	github.com/76creates/stickers v1.5.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 )

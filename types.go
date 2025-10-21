@@ -1,5 +1,10 @@
 package main
 
+import (
+	"github.com/76creates/stickers/flexbox"
+	"github.com/76creates/stickers/table"
+)
+
 // Reminder represents a single reminder from the JSON
 type Reminder struct {
 	DueDate     string `json:"dueDate"`
@@ -65,6 +70,9 @@ type model struct {
 	colorPickerCursor int  // index within availableColors palette for preview/selection
 	loading           bool
 	configPath        string
+	// Flexbox and table components
+	flexBox           *flexbox.FlexBox
+	table             *table.Table
 }
 
 // remindersLoadedMsg is sent when reminders are loaded

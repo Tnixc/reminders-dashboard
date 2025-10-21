@@ -85,6 +85,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.reminders = msg.reminders
 			sortReminders(&m)
 			updateAvailableLists(&m)
+			
+			// Update table data for list view
+			m.updateTableData()
 
 			// Initialize selectedLists if empty (first run)
 			if len(m.selectedLists) == 0 {
@@ -143,6 +146,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Switch view mode
 				if m.viewMode == ColumnView {
 					m.viewMode = ListView
+					m.updateTableData()
 				} else {
 					m.viewMode = ColumnView
 					// Initialize column scrolls for new view
@@ -180,45 +184,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.sidebarCursor--
 				}
 			} else if m.viewMode == ListView {
-				if m.cursor > 0 {
-					m.cursor--
-				}
-				// Keep cursor visible in list view
-				{
-					filtered := getFilteredReminders(&m)
-					visibleHeight := m.getContentHeight()
-					bounds := make([]reminderBounds, 0, len(filtered))
-					current := 0
-					for _, r := range filtered {
-						start := current
-						current += 2
-						if r.Notes != "" {
-							noteLines := strings.Split(r.Notes, "\n")
-							for _, line := range noteLines {
-								if strings.TrimSpace(line) != "" {
-									current++
-								}
-							}
-						}
-						current++
-						bounds = append(bounds, reminderBounds{startLine: start, endLine: current})
-					}
-					if m.cursor < len(bounds) {
-						cursorStart := bounds[m.cursor].startLine
-						cursorEnd := bounds[m.cursor].endLine
-						if cursorStart < m.scrollOffset {
-							m.scrollOffset = cursorStart
-						}
-						if cursorEnd > m.scrollOffset+visibleHeight {
-							m.scrollOffset = cursorEnd - visibleHeight
-							if m.scrollOffset < 0 {
-								m.scrollOffset = 0
-							}
-						}
-					} else {
-						m.scrollOffset = 0
-					}
-				}
+				// Move cursor up in table
+				m.table.CursorUp()
 			} else {
 				// Column view - move within column
 				if m.cursor > 0 {
@@ -263,43 +230,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.sidebarCursor++
 				}
 			} else if m.viewMode == ListView {
-				filtered := getFilteredReminders(&m)
-				if m.cursor < len(filtered)-1 {
-					m.cursor++
-				}
-				// Keep cursor visible in list view
-				{
-					visibleHeight := m.getContentHeight()
-					bounds := make([]reminderBounds, 0, len(filtered))
-					current := 0
-					for _, r := range filtered {
-						start := current
-						current += 2
-						if r.Notes != "" {
-							noteLines := strings.Split(r.Notes, "\n")
-							for _, line := range noteLines {
-								if strings.TrimSpace(line) != "" {
-									current++
-								}
-							}
-						}
-						current++
-						bounds = append(bounds, reminderBounds{startLine: start, endLine: current})
-					}
-					if m.cursor < len(bounds) {
-						cursorStart := bounds[m.cursor].startLine
-						cursorEnd := bounds[m.cursor].endLine
-						if cursorStart < m.scrollOffset {
-							m.scrollOffset = cursorStart
-						}
-						if cursorEnd > m.scrollOffset+visibleHeight {
-							m.scrollOffset = cursorEnd - visibleHeight
-							if m.scrollOffset < 0 {
-								m.scrollOffset = 0
-							}
-						}
-					}
-				}
+				// Move cursor down in table
+				m.table.CursorDown()
 			} else {
 				// Column view - move within column
 				columns := getColumns(&m)
@@ -343,6 +275,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							m.columnScrolls[m.columnCursor] = 0
 						}
 					}
+				} else if m.viewMode == ListView {
+					// Move cursor left in table
+					m.table.CursorLeft()
 				}
 			}
 
@@ -361,6 +296,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							m.columnScrolls[m.columnCursor] = 0
 						}
 					}
+				} else if m.viewMode == ListView {
+					// Move cursor right in table
+					m.table.CursorRight()
 				}
 			}
 
@@ -433,6 +371,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					listName := m.availableLists[m.colorPickerList]
 					m.colorPickerCursor = colorIdx
 					m.listColors[listName] = m.availableColors[colorIdx]
+					m.updateTableData()
 					m.saveConfig()
 					// Move to next list for quick editing and exit picker
 					if m.sidebarCursor < len(m.availableLists)-1 {
@@ -452,6 +391,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						// Reset column scrolls
 						columns := getColumns(&m)
 						m.columnScrolls = make([]int, len(columns))
+						m.updateTableData()
 						m.saveConfig()
 					}
 				} else if m.sidebarSection == SidebarListFilter {
@@ -463,6 +403,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						// Reset column scrolls
 						columns := getColumns(&m)
 						m.columnScrolls = make([]int, len(columns))
+						m.updateTableData()
 						m.saveConfig()
 					}
 				} else if m.sidebarSection == SidebarColorConfig {
