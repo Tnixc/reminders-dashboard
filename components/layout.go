@@ -80,13 +80,7 @@ func renderLayoutWithSidebar(config LayoutConfig, contentHeight int) string {
 // renderLayoutWithSettingsOverlay renders layout with settings as overlay
 func renderLayoutWithSettingsOverlay(config LayoutConfig, contentHeight int) string {
 	// Settings takes up center portion of screen
-	settingsWidth := config.Width * 2 / 3
-	if settingsWidth > 60 {
-		settingsWidth = 60
-	}
-	if settingsWidth < 40 {
-		settingsWidth = 40
-	}
+	settingsWidth := int(float64(config.Width) * 0.9)
 
 	settingsHeight := contentHeight * 3 / 4
 	if settingsHeight > 30 {
@@ -104,9 +98,7 @@ func renderLayoutWithSettingsOverlay(config LayoutConfig, contentHeight int) str
 		contentHeight,
 		lipgloss.Center,
 		lipgloss.Center,
-		config.SettingsPanel,
-		lipgloss.WithWhitespaceChars(" "),
-		lipgloss.WithWhitespaceForeground(lipgloss.Color("235")),
+		lipgloss.NewStyle().MaxWidth(settingsWidth).Render(config.SettingsPanel),
 	)
 
 	// Add footer

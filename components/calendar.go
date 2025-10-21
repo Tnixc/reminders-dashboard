@@ -18,17 +18,12 @@ type CalendarConfig struct {
 
 // RenderCalendar renders a small calendar widget
 func RenderCalendar(config CalendarConfig) string {
-	borderColor := "240"
-	if config.Focused {
-		borderColor = "205"
-	}
+
 
 	calendarStyle := lipgloss.NewStyle().
 		Width(config.Width).
 		Height(config.Height).
-		Padding(1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(borderColor))
+		Padding(1)
 
 	content := renderCalendarContent(config)
 
@@ -126,12 +121,8 @@ func renderCalendarContent(config CalendarConfig) string {
 
 // RenderMiniCalendar renders a minimal calendar placeholder
 func RenderMiniCalendar(width, height int, focused bool) string {
-	borderColor := "240"
-	if focused {
-		borderColor = "205"
-	}
-
 	now := time.Now()
+	_ = focused
 
 	// Simple mini calendar with just month and current day
 	contentStyle := lipgloss.NewStyle().
@@ -146,8 +137,7 @@ func RenderMiniCalendar(width, height int, focused bool) string {
 		Width(width).
 		Height(height).
 		Padding(1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(borderColor)).
+
 		Align(lipgloss.Center, lipgloss.Center)
 
 	return calendarStyle.Render(contentStyle.Render(content))

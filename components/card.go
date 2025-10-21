@@ -93,17 +93,11 @@ func RenderCard(reminder Reminder, style CardStyle, countdown string, urgency in
 
 	content := strings.Join(lines, "\n")
 
-	// Apply card border and styling
-	borderColor := style.BorderColor
-	if style.Focused {
-		borderColor = "205" // Pink when focused
-	}
+
 
 	cardStyle := lipgloss.NewStyle().
 		Width(style.Width).
-		Padding(style.PaddingTop, style.PaddingRight, style.PaddingBottom, style.PaddingLeft).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(borderColor))
+		Padding(style.PaddingTop, style.PaddingRight, style.PaddingBottom, style.PaddingLeft)
 
 	if style.Height > 0 {
 		cardStyle = cardStyle.Height(style.Height)
@@ -118,8 +112,7 @@ func RenderEmptyCard(width, height int, message string) string {
 		Width(width).
 		Height(height).
 		Padding(1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("240")).
+
 		Foreground(lipgloss.Color("245")).
 		Italic(true).
 		Align(lipgloss.Center, lipgloss.Center)

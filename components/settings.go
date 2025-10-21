@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -38,11 +39,9 @@ func RenderSettingsPanel(config SettingsConfig) string {
 
 	// Panel styling
 	panelStyle := lipgloss.NewStyle().
-		Width(config.Width).
+		Width(int(math.Round(float64(config.Width) * 0.9))).
 		Height(config.Height).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("205")).
-		Padding(1, 2).
+		Padding(1, 3).
 		Background(lipgloss.Color("235"))
 
 	// Header
@@ -280,17 +279,12 @@ func renderColorSettings(config SettingsConfig) string {
 func RenderSettingsButton(width, height int, focused bool) string {
 	text := "View settings\n(e.g. next n days,\nwhich lists)"
 
-	borderColor := "240"
-	if focused {
-		borderColor = "205"
-	}
+	_ = focused
 
 	buttonStyle := lipgloss.NewStyle().
 		Width(width).
 		Height(height).
 		Padding(1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(borderColor)).
 		Foreground(lipgloss.Color("248")).
 		Align(lipgloss.Center, lipgloss.Center)
 

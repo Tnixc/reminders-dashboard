@@ -59,6 +59,10 @@ type model struct {
 	width             int
 	height            int
 	err               error
+	// Color picker (two-step) state
+	colorPickerActive bool // true when awaiting color selection for the chosen list
+	colorPickerList   int  // index of the list currently targeted for recolor
+	colorPickerCursor int  // index within availableColors palette for preview/selection
 	loading           bool
 	configPath        string
 }

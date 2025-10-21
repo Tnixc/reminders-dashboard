@@ -108,15 +108,13 @@ func (m model) renderSettingsOverlay(contentHeight int, footer string) string {
 	// Render settings panel
 	settingsPanel := m.renderSettingsPanel()
 
-	// Overlay settings in center
+	// Overlay settings in center without background fill; allow up to 90% width
 	content := lipgloss.Place(
 		m.width,
 		contentHeight,
 		lipgloss.Center,
 		lipgloss.Center,
-		settingsPanel,
-		lipgloss.WithWhitespaceChars(" "),
-		lipgloss.WithWhitespaceForeground(lipgloss.Color("235")),
+		lipgloss.NewStyle().MaxWidth((m.width*9)/10).Render(settingsPanel),
 	)
 
 	return lipgloss.JoinVertical(lipgloss.Left, content, footer)
@@ -324,16 +322,9 @@ func (m model) renderCard(reminder Reminder, width int, focused bool, listColor 
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 
-	// Card styling
-	borderColor := "240"
-	if focused {
-		borderColor = "205"
-	}
-
+	// Card styling (no borders)
 	cardStyle := lipgloss.NewStyle().
-		Width(width).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color(borderColor))
+		Width(width)
 
 	return cardStyle.Render(content)
 }
@@ -440,8 +431,6 @@ func (m model) renderSettingsButton(width, height int) string {
 		Width(width).
 		Height(height).
 		Padding(1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("141")).
 		Foreground(lipgloss.Color("248")).
 		Align(lipgloss.Center, lipgloss.Center)
 
@@ -485,8 +474,6 @@ func (m model) renderCalendar(width, height int) string {
 		Width(width).
 		Height(height).
 		Padding(1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("141")).
 		Align(lipgloss.Center, lipgloss.Center)
 
 	return calendarStyle.Render(content)
@@ -494,10 +481,7 @@ func (m model) renderCalendar(width, height int) string {
 
 // renderSettingsPanel renders the settings overlay panel
 func (m model) renderSettingsPanel() string {
-	panelWidth := 50
-	if panelWidth > m.width*2/3 {
-		panelWidth = m.width * 2 / 3
-	}
+	panelWidth := (m.width * 9) / 10
 
 	panelHeight := 30
 	if panelHeight > m.height*3/4 {
@@ -518,12 +502,10 @@ func (m model) renderSettingsPanel() string {
 	content += m.renderListFilterSection() + "\n\n"
 	content += m.renderColorConfigSection()
 
-	// Panel styling
+	// Panel styling (no border, wider)
 	panelStyle := lipgloss.NewStyle().
 		Width(panelWidth).
 		Height(panelHeight).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("205")).
 		Padding(1, 2).
 		Background(lipgloss.Color("235"))
 
@@ -646,18 +628,24 @@ func (m model) renderColorConfigSection() string {
 	normalStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("248"))
 
+	paletteLabelStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("245"))
+
 	var lines []string
 
+	// Header + instructions
 	if m.sidebarSection == SidebarColorConfig {
 		lines = append(lines, focusedStyle.Render("▸ List Colors"))
-		infoStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("245")).
-			Italic(true)
-		lines = append(lines, infoStyle.Render("  Press 1-9, 0 to set color"))
+		if m.colorPickerActive {
+			lines = append(lines, paletteLabelStyle.Italic(true).Render("  Choose a color (1-9, 0). esc: cancel"))
+		} else {
+			lines = append(lines, paletteLabelStyle.Italic(true).Render("  Enter: pick list • 1-9/0: set color"))
+		}
 	} else {
 		lines = append(lines, titleStyle.Render("  List Colors"))
 	}
 
+	// Lists with current color swatch
 	for i, listName := range m.availableLists {
 		cursor := "  "
 		if m.sidebarSection == SidebarColorConfig && m.sidebarCursor == i {
@@ -675,13 +663,59 @@ func (m model) renderColorConfigSection() string {
 
 		line := fmt.Sprintf("  %s%s %s", cursor, colorBlock, listName)
 
-		if m.sidebarSection == SidebarColorConfig && m.sidebarCursor == i {
+		// Highlight the list targeted for recolor when active
+		if m.colorPickerActive && m.colorPickerList == i {
+			line = focusedStyle.Render(line + "  (selected)")
+		} else if m.sidebarSection == SidebarColorConfig && m.sidebarCursor == i {
 			line = focusedStyle.Render(line)
 		} else {
 			line = normalStyle.Render(line)
 		}
 
 		lines = append(lines, line)
+	}
+
+	// Palette preview (actual color display)
+	if len(m.availableColors) > 0 {
+		lines = append(lines, "")
+		lines = append(lines, paletteLabelStyle.Render("  Color Palette:"))
+
+		row := "  "
+		for i, code := range m.availableColors {
+			name := ""
+			if i < len(m.colorNames) {
+				name = m.colorNames[i]
+			}
+
+			key := ""
+			if i < 9 {
+				key = fmt.Sprintf("%d", i+1)
+			} else if i == 9 {
+				key = "0"
+			}
+
+			swatch := lipgloss.NewStyle().
+				Foreground(lipgloss.Color(code)).
+				Render("●")
+
+			item := fmt.Sprintf("%s:%s %s  ", key, swatch, name)
+
+			// Optional underline for palette cursor when active
+			if m.colorPickerActive && m.colorPickerCursor == i {
+				item = lipgloss.NewStyle().Underline(true).Render(item)
+			}
+
+			row += item
+
+			// Break rows every 5 colors
+			if (i+1)%5 == 0 && i != len(m.availableColors)-1 {
+				lines = append(lines, row)
+				row = "  "
+			}
+		}
+		if strings.TrimSpace(row) != "" && row != "  " {
+			lines = append(lines, row)
+		}
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Right, lines...)
@@ -692,7 +726,7 @@ func (m model) renderFooter() string {
 	helpText := "tab: view • s: settings • ←/→: columns • ↑/↓: items • r: refresh • q: quit"
 
 	if m.sidebarFocused {
-		helpText = "esc: close • tab: section • space: toggle • 1-9/0: color • ↑/↓: navigate • q: quit"
+		helpText = "esc: close • tab: section • enter: pick list • 1-9/0: color • space: toggle • ↑/↓: navigate • q: quit"
 	} else if m.viewMode == ListView {
 		helpText = "tab: view • s: settings • ↑/↓: items • r: refresh • q: quit"
 	}
@@ -737,8 +771,6 @@ func renderEmpty(width, height int, message string) string {
 		Width(width).
 		Height(height).
 		Padding(1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("240")).
 		Foreground(lipgloss.Color("245")).
 		Italic(true).
 		Align(lipgloss.Center, lipgloss.Center)

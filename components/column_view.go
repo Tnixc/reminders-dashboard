@@ -99,8 +99,6 @@ func RenderColumnView(config ColumnViewConfig) string {
 			Width(columnWidth).
 			Height(config.Height).
 			Padding(1).
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("240")).
 			Foreground(lipgloss.Color("245")).
 			Italic(true).
 			Align(lipgloss.Center, lipgloss.Center).
@@ -196,16 +194,11 @@ func renderSingleColumn(
 	content += footer
 
 	// Wrap in column container
-	borderColor := "240"
-	if focused {
-		borderColor = "205"
-	}
+
 
 	columnStyle := lipgloss.NewStyle().
 		Width(width).
 		Height(height).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(borderColor)).
 		Padding(0, 1)
 
 	return columnStyle.Render(content)

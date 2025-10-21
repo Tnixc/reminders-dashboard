@@ -128,8 +128,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "esc":
-			// Close settings panel if open
+			// Close color picker or settings panel
 			if m.sidebarFocused {
+				if m.colorPickerActive {
+					m.colorPickerActive = false
+					return m, nil
+				}
 				m.sidebarFocused = false
 				return m, nil
 			}
@@ -158,11 +162,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.sidebarSection = SidebarDaysFilter
 				}
 				m.sidebarCursor = 0
+				m.colorPickerActive = false
 			}
 
 		case "s":
 			m.sidebarFocused = !m.sidebarFocused
 			m.sidebarCursor = 0
+			m.colorPickerActive = false
 
 		case "r":
 			m.loading = true
@@ -397,43 +403,42 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "1", "2", "3", "4", "5", "6", "7", "8", "9", "0":
-			// Numeric color picker
-			if m.sidebarFocused && m.sidebarSection == SidebarColorConfig {
-				if m.sidebarCursor < len(m.availableLists) {
-					// Convert key to color index
-					colorIdx := -1
-					switch msg.String() {
-					case "1":
-						colorIdx = 0
-					case "2":
-						colorIdx = 1
-					case "3":
-						colorIdx = 2
-					case "4":
-						colorIdx = 3
-					case "5":
-						colorIdx = 4
-					case "6":
-						colorIdx = 5
-					case "7":
-						colorIdx = 6
-					case "8":
-						colorIdx = 7
-					case "9":
-						colorIdx = 8
-					case "0":
-						colorIdx = 9
+			// Numeric color picker (requires selecting a list first)
+			if m.sidebarFocused && m.sidebarSection == SidebarColorConfig && m.colorPickerActive {
+				// Convert key to color index
+				colorIdx := -1
+				switch msg.String() {
+				case "1":
+					colorIdx = 0
+				case "2":
+					colorIdx = 1
+				case "3":
+					colorIdx = 2
+				case "4":
+					colorIdx = 3
+				case "5":
+					colorIdx = 4
+				case "6":
+					colorIdx = 5
+				case "7":
+					colorIdx = 6
+				case "8":
+					colorIdx = 7
+				case "9":
+					colorIdx = 8
+				case "0":
+					colorIdx = 9
+				}
+				if colorIdx >= 0 && colorIdx < len(m.availableColors) && m.colorPickerList < len(m.availableLists) {
+					listName := m.availableLists[m.colorPickerList]
+					m.colorPickerCursor = colorIdx
+					m.listColors[listName] = m.availableColors[colorIdx]
+					m.saveConfig()
+					// Move to next list for quick editing and exit picker
+					if m.sidebarCursor < len(m.availableLists)-1 {
+						m.sidebarCursor++
 					}
-
-					if colorIdx >= 0 && colorIdx < len(m.availableColors) {
-						listName := m.availableLists[m.sidebarCursor]
-						m.listColors[listName] = m.availableColors[colorIdx]
-						m.saveConfig()
-						// Move to next list for quick editing
-						if m.sidebarCursor < len(m.availableLists)-1 {
-							m.sidebarCursor++
-						}
-					}
+					m.colorPickerActive = false
 				}
 			}
 
@@ -459,6 +464,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						columns := getColumns(&m)
 						m.columnScrolls = make([]int, len(columns))
 						m.saveConfig()
+					}
+				} else if m.sidebarSection == SidebarColorConfig {
+					// Step 1: choose a list to recolor
+					if !m.colorPickerActive {
+						if m.sidebarCursor < len(m.availableLists) {
+							m.colorPickerActive = true
+							m.colorPickerList = m.sidebarCursor
+							// initialize cursor to current color index if possible
+							listName := m.availableLists[m.colorPickerList]
+							current := m.listColors[listName]
+							idx := -1
+							for i, c := range m.availableColors {
+								if c == current {
+									idx = i
+									break
+								}
+							}
+							if idx >= 0 {
+								m.colorPickerCursor = idx
+							} else {
+								m.colorPickerCursor = 0
+							}
+						}
+					} else {
+						// If already active, pressing enter cancels selection
+						m.colorPickerActive = false
 					}
 				}
 			}
