@@ -114,6 +114,30 @@ func (m *Model) initScreen() tea.Msg {
 		return initMsg{Config: cfg}
 	}
 
+	// Debug logging to verify config was loaded correctly
+	log.Debug("Config loaded successfully")
+	log.Debug("Config file path", "path", m.ctx.ConfigFlag)
+	log.Debug("Confirm quit", "value", cfg.ConfirmQuit)
+	log.Debug("Smart filtering at launch", "value", cfg.SmartFilteringAtLaunch)
+	log.Debug("Reminders limit", "value", cfg.Defaults.RemindersLimit)
+	log.Debug("Preview open", "value", cfg.Defaults.Preview.Open)
+	log.Debug("Preview width", "value", cfg.Defaults.Preview.Width)
+	log.Debug("Refetch interval minutes", "value", cfg.Defaults.RefetchIntervalMinutes)
+	log.Debug("Date format", "value", cfg.Defaults.DateFormat)
+	log.Debug("Number of reminder sections", "count", len(cfg.RemindersSections))
+	for i, section := range cfg.RemindersSections {
+		log.Debug("Reminder section", "index", i, "title", section.Title, "filters", section.Filters)
+	}
+	if cfg.Theme != nil {
+		log.Debug("Theme UI sections show count", "value", cfg.Theme.Ui.SectionsShowCount)
+		log.Debug("Theme UI table show separator", "value", cfg.Theme.Ui.Table.ShowSeparator)
+		log.Debug("Theme UI table compact", "value", cfg.Theme.Ui.Table.Compact)
+	}
+	log.Debug("Number of list colors", "count", len(cfg.ListColors))
+	for list, color := range cfg.ListColors {
+		log.Debug("List color", "list", list, "color", color)
+	}
+
 	err = keys.Rebind(
 		cfg.Keybindings.Universal,
 		cfg.Keybindings.Reminders,

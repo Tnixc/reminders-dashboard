@@ -1,0 +1,97 @@
+# Test configuration file for reminders-dashboard
+# This file is used to verify that config loading works correctly
+
+confirmQuit = true
+smartFilteringAtLaunch = false
+
+[defaults]
+remindersLimit = 50
+view = "reminders"
+refetchIntervalMinutes = 5
+dateFormat = "2006-01-02"
+
+[defaults.preview]
+open = false
+width = 60
+
+[defaults.layout.reminders.title]
+width = 40
+
+[defaults.layout.reminders.list]
+width = 25
+
+[defaults.layout.reminders.dueIn]
+width = 20
+
+[defaults.layout.reminders.date]
+hidden = true
+
+[defaults.layout.reminders.priority]
+width = 12
+
+[defaults.layout.reminders.completed]
+width = 15
+
+[[remindersSections]]
+title = "High Priority"
+filters = "priority:high"
+limit = 10
+
+[[remindersSections]]
+title = "Due Today"
+filters = "due:today"
+limit = 15
+
+[[remindersSections]]
+title = "All Tasks"
+filters = ""
+
+[listColors]
+"Shopping" = "#FF6B6B"
+"Work" = "#4ECDC4"
+"Personal" = "#45B7D1"
+
+[theme.ui]
+sectionsShowCount = false
+
+[theme.ui.table]
+showSeparator = false
+compact = true
+
+[theme.colors.text]
+primary = "#E0E0E0"
+secondary = "#A0A0A0"
+inverted = "#1A1A1A"
+faint = "#606060"
+warning = "#FFA500"
+success = "#00FF00"
+error = "#FF0000"
+
+[theme.colors.border]
+primary = "#808080"
+secondary = "#505050"
+faint = "#303030"
+
+[theme.colors.background]
+selected = "#2A2A2A"
+
+[theme.colors.icon]
+newcontributor = "#95E1D3"
+contributor = "#F38181"
+collaborator = "#AA96DA"
+member = "#FCBAD3"
+owner = "#FFFFD2"
+unknownrole = "#A8E6CF"
+
+[[keybindings.universal]]
+key = "ctrl+r"
+builtin = "refresh"
+
+[[keybindings.universal]]
+key = "ctrl+q"
+builtin = "quit"
+
+[[keybindings.reminders]]
+key = "ctrl+n"
+builtin = "new"
+name = "Create New Reminder"
