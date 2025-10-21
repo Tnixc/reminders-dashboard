@@ -200,24 +200,15 @@ func (m model) renderColumn(reminders []Reminder, listName string, width, height
 		listColor = color
 	}
 
-	// Modern header with badge-style design
-	badgeColor := listColor
-	if focused {
-		badgeColor = listColor // Keep same color, just background highlight later
-	}
-	
-	headerBadgeStyle := lipgloss.NewStyle().
+	// Header with list name and count
+	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("235")).
-		Background(lipgloss.Color(badgeColor)).
-		Padding(0, 1).
-		Align(lipgloss.Left)
+		Foreground(lipgloss.Color(listColor))
 
-	countBadgeStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245")).
-		Italic(true)
+	countStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("245"))
 
-	header := headerBadgeStyle.Render(listName) + " " + countBadgeStyle.Render(fmt.Sprintf("(%d)", len(reminders)))
+	header := headerStyle.Render(listName) + " " + countStyle.Render(fmt.Sprintf("(%d)", len(reminders)))
 
 	// Calculate visible cards
 	// Each card: border(2) + title(1) + due(1) + countdown(1) = 5 lines
@@ -299,12 +290,11 @@ func (m model) renderColumn(reminders []Reminder, listName string, width, height
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 
-	// Column styling with consistent border - no change on focus
+	// Column styling with square border - no change on focus
 	columnStyle := lipgloss.NewStyle().
 		Width(width).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("237")).
-		Padding(1)
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("237"))
 
 	return columnStyle.Render(content)
 }
@@ -334,34 +324,20 @@ func (m model) renderCard(reminder Reminder, width int, focused bool, listColor 
 		Foreground(lipgloss.Color("245")).
 		Italic(true)
 
-	// Countdown with urgency-based badge
-	countdownBadgeStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("235")).
-		Background(urgencyColor).
-		Padding(0, 1).
+	// Countdown with urgency color
+	countdownStyle := lipgloss.NewStyle().
+		Foreground(urgencyColor).
 		Bold(true)
 
 	// Build card content
 	var lines []string
 	lines = append(lines, titleStyle.Render(title))
-	lines = append(lines, metaStyle.Render("  📅 "+dueText))
-	lines = append(lines, "  "+countdownBadgeStyle.Render(countdown))
+	lines = append(lines, metaStyle.Render("  "+dueText))
+	lines = append(lines, "  "+countdownStyle.Render(countdown))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 
-	// Card styling - background changes on focus, no border changes
-	backgroundColor := lipgloss.Color("236")
-	if focused {
-		backgroundColor = lipgloss.Color("237")
-	}
-
-	cardStyle := lipgloss.NewStyle().
-		Width(width).
-		Background(backgroundColor).
-		Padding(1).
-		MarginBottom(1)
-
-	return cardStyle.Render(content)
+	return content
 }
 
 // renderListView renders the compact list view with table-style alignment
@@ -379,34 +355,33 @@ func (m model) renderListView(width, height int) string {
 
 	var lines []string
 
-	// Add a modern header
+	// Add header
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("183")).
-		Background(lipgloss.Color("53")).
-		Padding(0, 2).
-		Width(width - 8)
+		Foreground(lipgloss.Color("183"))
 	
-	lines = append(lines, headerStyle.Render(fmt.Sprintf("📋 All Reminders (%d)", len(filtered))))
-	lines = append(lines, "")
+	lines = append(lines, headerStyle.Render(fmt.Sprintf("All Reminders (%d)", len(filtered))))
 
 	// Define fixed column widths for table layout
-	contentWidth := width - 8
+	contentWidth := width - 4
 	cursorWidth := 2
-	titleWidth := (contentWidth - cursorWidth - 30) // Remaining space for title
-	if titleWidth < 20 {
-		titleWidth = 20
+	titleWidth := 30 // Fixed reasonable width for title
+	if titleWidth > contentWidth-40 {
+		titleWidth = contentWidth - 40
 	}
-	listWidth := 15
-	countdownWidth := 12
+	if titleWidth < 15 {
+		titleWidth = 15
+	}
+	listWidth := 15 // Increased width for badges
+	countdownWidth := 10
 
 	// Add table header
 	headerRowStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("245")).
 		Bold(true)
 	
-	headerRow := fmt.Sprintf("  %-*s  %-*s  %-*s  %s",
-		titleWidth, "Title",
+	headerRow := fmt.Sprintf("%-*s  %-*s  %-*s  %s",
+		titleWidth+cursorWidth, "Title",
 		listWidth, "List",
 		countdownWidth, "Countdown",
 		"Due Date")
@@ -415,10 +390,10 @@ func (m model) renderListView(width, height int) string {
 	// Add separator
 	separatorStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("237"))
-	lines = append(lines, separatorStyle.Render("  "+strings.Repeat("─", contentWidth)))
+	lines = append(lines, separatorStyle.Render(strings.Repeat("─", contentWidth)))
 
 	// Calculate visible range (adjust for header)
-	adjustedHeight := height - 7 // Account for header, table header, separator, footer
+	adjustedHeight := height - 4 // Account for header, table header, separator
 	visibleStart := m.scrollOffset
 	visibleEnd := m.scrollOffset + adjustedHeight
 
@@ -439,21 +414,25 @@ func (m model) renderListView(width, height int) string {
 			listColor = color
 		}
 
-		// Create modern badges
-		listBadgeStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("235")).
+		// Create badge-style list display with colored background
+		badgeStyle := lipgloss.NewStyle().
 			Background(lipgloss.Color(listColor)).
-			Padding(0, 1).
-			Bold(true)
+			Foreground(lipgloss.Color("0")).
+			Bold(true).
+			Padding(0, 1)
 		
-		countdownBadgeStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("235")).
-			Background(urgencyColor).
-			Padding(0, 1).
+		// Truncate list name if too long for badge
+		listName := reminder.List
+		if len(listName) > listWidth-3 {
+			listName = listName[:listWidth-4] + "…"
+		}
+		listBadge := badgeStyle.Render(listName)
+	
+		countdownStyle := lipgloss.NewStyle().
+			Foreground(urgencyColor).
 			Bold(true)
 
-		listBadge := listBadgeStyle.Render(reminder.List)
-		countdownBadge := countdownBadgeStyle.Render(countdown)
+		countdownText := countdownStyle.Render(countdown)
 
 		dueText := formatDueDate(reminder.DueDate)
 		dueStyle := lipgloss.NewStyle().
@@ -462,50 +441,34 @@ func (m model) renderListView(width, height int) string {
 
 		// Truncate title if too long
 		title := reminder.Title
-		if len(title) > titleWidth-3 {
+		if len(title) > titleWidth {
 			title = title[:titleWidth-3] + "..."
 		}
 
 		// Build table row with fixed widths
 		cursor := "  "
 		titleColor := lipgloss.Color("255")
-		bgColor := lipgloss.Color("")
 		
 		if i == m.cursor {
-			cursor = "▸ "
-			titleColor = lipgloss.Color(listColor)
-			bgColor = lipgloss.Color("237")
+			cursor = "> "
+			titleColor = lipgloss.Color("183")
 		}
 
 		titleStyle := lipgloss.NewStyle().
 			Foreground(titleColor).
-			Bold(true)
+			Bold(i == m.cursor)
 
 		// Format as fixed-width table row
-		rowContent := fmt.Sprintf("%-*s  %-*s  %-*s  %s",
+		// Note: we need to account for the badge rendering width separately
+		row := fmt.Sprintf("%s%-*s  %s%s  %-*s  %s",
+			cursor,
 			titleWidth, titleStyle.Render(title),
-			listWidth+4, listBadge, // +4 for badge padding/styling
-			countdownWidth+4, countdownBadge, // +4 for badge padding/styling
-			dueStyle.Render("📅 "+dueText))
+			listBadge,
+			strings.Repeat(" ", listWidth-len(listName)-2), // Adjust spacing after badge
+			countdownWidth, countdownText,
+			dueStyle.Render(dueText))
 
-		// Apply background only, no border changes
-		if i == m.cursor {
-			rowStyle := lipgloss.NewStyle().
-				Background(bgColor).
-				Width(contentWidth)
-			lines = append(lines, cursor+rowStyle.Render(rowContent))
-		} else {
-			lines = append(lines, cursor+rowContent)
-		}
-	}
-
-	// Add scroll indicator at bottom if needed
-	if len(filtered) > adjustedHeight {
-		lines = append(lines, "")
-		scrollStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("245")).
-			Italic(true)
-		lines = append(lines, scrollStyle.Render(fmt.Sprintf("  ↕ Showing %d-%d of %d", visibleStart+1, min(visibleEnd, len(filtered)), len(filtered))))
+		lines = append(lines, row)
 	}
 
 	// Join and style
@@ -513,10 +476,9 @@ func (m model) renderListView(width, height int) string {
 
 	// Add overall border - never changes
 	containerStyle := lipgloss.NewStyle().
-		Width(width - 4).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("237")).
-		Padding(1)
+		Width(width - 2).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("237"))
 
 	return containerStyle.Render(content)
 }
@@ -548,15 +510,14 @@ func (m model) renderSidebar(width, height int) string {
 
 // renderSettingsButton renders the settings button
 func (m model) renderSettingsButton(width, height int) string {
-	text := "⚙ View settings\n\n(next n days,\nfilter lists)\n\nPress 's' to open"
+	text := "Settings\n\n(next n days,\nfilter lists)\n\nPress 's'"
 
 	buttonStyle := lipgloss.NewStyle().
 		Width(width).
 		Height(height).
-		Padding(1).
 		Foreground(lipgloss.Color("183")).
 		Align(lipgloss.Center, lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
+		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("237"))
 
 	return buttonStyle.Render(text)
@@ -566,20 +527,17 @@ func (m model) renderSettingsButton(width, height int) string {
 func (m model) renderCalendar(width, height int) string {
 	now := time.Now()
 
-	// Create calendar title with modern styling
+	// Create calendar title
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("183")).
-		Italic(true)
+		Foreground(lipgloss.Color("183"))
 
 	title := titleStyle.Render(now.Format("January 2006"))
 
-	// Create day number with vibrant color
+	// Create day number
 	dayStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("235")).
-		Background(lipgloss.Color("205")).
-		Padding(0, 2).
+		Foreground(lipgloss.Color("205")).
 		Width(width - 2).
 		Align(lipgloss.Center)
 
@@ -587,14 +545,12 @@ func (m model) renderCalendar(width, height int) string {
 
 	// Create weekday
 	weekdayStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("248")).
-		Italic(true)
+		Foreground(lipgloss.Color("248"))
 
 	weekday := weekdayStyle.Render(now.Format("Monday"))
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
 		title,
-		"",
 		day,
 		weekday,
 	)
@@ -602,9 +558,8 @@ func (m model) renderCalendar(width, height int) string {
 	calendarStyle := lipgloss.NewStyle().
 		Width(width).
 		Height(height).
-		Padding(1).
 		Align(lipgloss.Center, lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
+		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("237"))
 
 	return calendarStyle.Render(content)
@@ -614,35 +569,29 @@ func (m model) renderCalendar(width, height int) string {
 func (m model) renderSettingsPanel() string {
 	panelWidth := (m.width * 9) / 10
 
-	panelHeight := 35
+	panelHeight := 30
 	if panelHeight > m.height*3/4 {
 		panelHeight = m.height * 3 / 4
 	}
 
-	// Header with modern gradient-like styling
+	// Header
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("205")).
-		Background(lipgloss.Color("53")).
-		Padding(0, 2).
-		MarginBottom(1).
-		Width(panelWidth - 4)
+		Foreground(lipgloss.Color("205"))
 
-	header := headerStyle.Render("⚙ Settings")
+	header := headerStyle.Render("Settings")
 
 	// Build content sections
-	content := header + "\n\n"
-	content += m.renderDaysFilterSection() + "\n\n"
-	content += m.renderListFilterSection() + "\n\n"
+	content := header + "\n"
+	content += m.renderDaysFilterSection() + "\n"
+	content += m.renderListFilterSection() + "\n"
 	content += m.renderColorConfigSection()
 
-	// Panel styling with rounded border - never changes
+	// Panel styling with square border - never changes
 	panelStyle := lipgloss.NewStyle().
 		Width(panelWidth).
 		Height(panelHeight).
-		Padding(1, 2).
-		Background(lipgloss.Color("235")).
-		Border(lipgloss.RoundedBorder()).
+		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("237"))
 
 	return panelStyle.Render(content)
@@ -652,8 +601,7 @@ func (m model) renderSettingsPanel() string {
 func (m model) renderDaysFilterSection() string {
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("141")).
-		Italic(true)
+		Foreground(lipgloss.Color("141"))
 
 	focusedStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -662,21 +610,13 @@ func (m model) renderDaysFilterSection() string {
 	normalStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("248"))
 
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("141")).
-		Background(lipgloss.Color("53")).
-		Padding(0, 2).
-		MarginBottom(1)
-
 	var lines []string
 
-	sectionHeader := "  Days Filter"
+	sectionHeader := "Days Filter"
 	if m.sidebarSection == SidebarDaysFilter {
-		sectionHeader = "▸ Days Filter"
-		lines = append(lines, headerStyle.Render(sectionHeader))
+		lines = append(lines, focusedStyle.Render("> " + sectionHeader))
 	} else {
-		lines = append(lines, titleStyle.Render(sectionHeader))
+		lines = append(lines, titleStyle.Render("  " + sectionHeader))
 	}
 
 	for i, days := range m.daysFilterOptions {
@@ -687,26 +627,28 @@ func (m model) renderDaysFilterSection() string {
 
 		// Fixed width cursor to prevent layout shifts
 		cursor := "  "
-		lineColor := normalStyle
 		if m.sidebarSection == SidebarDaysFilter && m.sidebarCursor == i {
-			cursor = "▸ "
-			lineColor = focusedStyle
+			cursor = "> "
 		}
 
-		// Modern radio button style
-		check := "○"
+		// Radio button style
+		check := "( )"
 		checkColor := lipgloss.Color("248")
 		if days == m.daysFilter {
-			check = "●"
+			check = "(x)"
 			checkColor = lipgloss.Color("141")
 		}
 		
 		checkStyle := lipgloss.NewStyle().
-			Foreground(checkColor).
-			Bold(days == m.daysFilter)
+			Foreground(checkColor)
 
 		line := fmt.Sprintf("%s%s %s", cursor, checkStyle.Render(check), label)
-		line = lineColor.Render(line)
+		
+		if m.sidebarSection == SidebarDaysFilter && m.sidebarCursor == i {
+			line = focusedStyle.Render(line)
+		} else {
+			line = normalStyle.Render(line)
+		}
 
 		lines = append(lines, line)
 	}
@@ -718,8 +660,7 @@ func (m model) renderDaysFilterSection() string {
 func (m model) renderListFilterSection() string {
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("141")).
-		Italic(true)
+		Foreground(lipgloss.Color("141"))
 
 	focusedStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -728,48 +669,40 @@ func (m model) renderListFilterSection() string {
 	normalStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("248"))
 
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("81")).
-		Background(lipgloss.Color("53")).
-		Padding(0, 2).
-		MarginBottom(1)
-
 	var lines []string
 
-	sectionHeader := "  List Filter"
+	sectionHeader := "List Filter"
 	if m.sidebarSection == SidebarListFilter {
-		sectionHeader = "▸ List Filter"
-		lines = append(lines, headerStyle.Render(sectionHeader))
+		lines = append(lines, focusedStyle.Render("> " + sectionHeader))
 	} else {
-		lines = append(lines, titleStyle.Render(sectionHeader))
+		lines = append(lines, titleStyle.Render("  " + sectionHeader))
 	}
 
 	for i, listName := range m.availableLists {
 		// Fixed width cursor to prevent layout shifts
 		cursor := "  "
-		lineColor := normalStyle
 		if m.sidebarSection == SidebarListFilter && m.sidebarCursor == i {
-			cursor = "▸ "
-			lineColor = focusedStyle
+			cursor = "> "
 		}
 
-		// Modern checkbox style
-		check := "☐"
+		// Checkbox style
+		check := "[ ]"
 		checkColor := lipgloss.Color("248")
-		isSelected := false
 		if selected, exists := m.selectedLists[listName]; exists && selected {
-			check = "☑"
+			check = "[x]"
 			checkColor = lipgloss.Color("48")
-			isSelected = true
 		}
 		
 		checkStyle := lipgloss.NewStyle().
-			Foreground(checkColor).
-			Bold(isSelected)
+			Foreground(checkColor)
 
 		line := fmt.Sprintf("%s%s %s", cursor, checkStyle.Render(check), listName)
-		line = lineColor.Render(line)
+		
+		if m.sidebarSection == SidebarListFilter && m.sidebarCursor == i {
+			line = focusedStyle.Render(line)
+		} else {
+			line = normalStyle.Render(line)
+		}
 
 		lines = append(lines, line)
 	}
@@ -779,11 +712,9 @@ func (m model) renderListFilterSection() string {
 
 // renderColorConfigSection renders the color configuration settings
 func (m model) renderColorConfigSection() string {
-	// Modern gradient styles
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("141")).
-		Italic(true)
+		Foreground(lipgloss.Color("141"))
 
 	focusedStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -792,88 +723,70 @@ func (m model) renderColorConfigSection() string {
 	normalStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("248"))
 
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("205")).
-		Background(lipgloss.Color("53")).
-		Padding(0, 2).
-		MarginBottom(1)
-
 	instructionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("183")).
-		Italic(true).
-		MarginBottom(1)
+		Foreground(lipgloss.Color("245"))
 
 	var lines []string
 
-	// Header + instructions with modern styling
-	sectionHeader := "  List Colors"
+	// Header + instructions
+	sectionHeader := "List Colors"
 	if m.sidebarSection == SidebarColorConfig {
-		sectionHeader = "▸ List Colors"
-		lines = append(lines, headerStyle.Render(sectionHeader))
+		lines = append(lines, focusedStyle.Render("> " + sectionHeader))
 		if m.colorPickerActive {
-			lines = append(lines, instructionStyle.Render("  Choose a color (1-9, 0) • esc: cancel"))
+			lines = append(lines, instructionStyle.Render("  1-9/0: color, esc: cancel"))
 		} else {
-			lines = append(lines, instructionStyle.Render("  Enter: pick list • 1-9/0: set color"))
+			lines = append(lines, instructionStyle.Render("  enter: pick, 1-9/0: color"))
 		}
 	} else {
-		lines = append(lines, titleStyle.Render(sectionHeader))
+		lines = append(lines, titleStyle.Render("  " + sectionHeader))
 	}
 
-	// Lists with modern color badge design
+	// Lists with color indicators
 	for i, listName := range m.availableLists {
 		currentColor := "248"
 		if color, exists := m.listColors[listName]; exists {
 			currentColor = color
 		}
 
-		// Create a colorful badge for the list
-		listBadgeStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("235")).
-			Background(lipgloss.Color(currentColor)).
-			Padding(0, 1).
-			Bold(true)
+		// Color indicator
+		colorStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(currentColor))
 
-		badge := listBadgeStyle.Render("●")
+		indicator := colorStyle.Render("*")
 
 		// Fixed width cursor to prevent layout shifts
 		cursor := "  "
-		nameColor := normalStyle
-		nameText := listName
 		
 		if m.sidebarSection == SidebarColorConfig && m.sidebarCursor == i {
-			cursor = "▸ "
-			nameColor = focusedStyle
+			cursor = "> "
 		}
 		
-		// Highlight the list targeted for recolor when active
+		// Show selection indicator when active
+		suffix := "  "
 		if m.colorPickerActive && m.colorPickerList == i {
-			nameText = listName + " ✓"
-			nameStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("205")).
-				Bold(true)
-			nameText = nameStyle.Render(nameText)
-		} else {
-			nameText = nameColor.Render(nameText)
+			suffix = " <"
 		}
 
-		line := fmt.Sprintf("%s%s %s", cursor, badge, nameText)
+		line := fmt.Sprintf("%s%s %s%s", cursor, indicator, listName, suffix)
+		
+		if m.sidebarSection == SidebarColorConfig && m.sidebarCursor == i {
+			line = focusedStyle.Render(line)
+		} else {
+			line = normalStyle.Render(line)
+		}
 
 		lines = append(lines, line)
 	}
 
-	// Modern color palette with cards
+	// Color palette
 	if len(m.availableColors) > 0 {
 		lines = append(lines, "")
 		
 		paletteHeaderStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("183")).
-			Bold(true).
-			MarginTop(1).
-			MarginBottom(1)
-		lines = append(lines, paletteHeaderStyle.Render("  Color Palette"))
+			Foreground(lipgloss.Color("183"))
+		lines = append(lines, paletteHeaderStyle.Render("  Colors"))
 
-		// Create color swatches in a grid with rounded borders
+		// Create color list
 		for i := 0; i < len(m.availableColors); i++ {
 			code := m.availableColors[i]
 			name := ""
@@ -888,35 +801,25 @@ func (m model) renderColorConfigSection() string {
 				key = "0"
 			}
 
-			// Create a card-style color swatch
+			// Color swatch
 			swatchStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("235")).
-				Background(lipgloss.Color(code)).
-				Padding(0, 1).
-				Bold(true)
+				Foreground(lipgloss.Color(code))
 
 			keyStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("245")).
-				Bold(true)
+				Foreground(lipgloss.Color("245"))
 
 			nameStyle := lipgloss.NewStyle().
 				Foreground(lipgloss.Color("248"))
 
-			swatch := swatchStyle.Render("████")
+			swatch := swatchStyle.Render("██")
 			
 			// Add selection indicator with fixed width
-			nameText := name
+			suffix := "  "
 			if m.colorPickerActive && m.colorPickerCursor == i {
-				// Highlighted with background, no layout shift
-				highlightStyle := lipgloss.NewStyle().
-					Foreground(lipgloss.Color(code)).
-					Bold(true)
-				nameText = highlightStyle.Render(name + " ◀")
-			} else {
-				nameText = nameStyle.Render(name + "   ") // Padding to match "◀" width
+				suffix = " <"
 			}
 			
-			item := fmt.Sprintf("  %s %s %s", keyStyle.Render(key), swatch, nameText)
+			item := fmt.Sprintf("  %s %s %s%s", keyStyle.Render(key), swatch, nameStyle.Render(name), suffix)
 
 			lines = append(lines, item)
 		}
