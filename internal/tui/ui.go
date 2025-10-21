@@ -131,11 +131,11 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
-		cmd        tea.Cmd
-		tabsCmd    tea.Cmd
-		sidebarCmd tea.Cmd
-		footerCmd  tea.Cmd
-		cmds       []tea.Cmd
+		cmd         tea.Cmd
+		tabsCmd     tea.Cmd
+		sidebarCmd  tea.Cmd
+		footerCmd   tea.Cmd
+		cmds        []tea.Cmd
 		currSection = m.getCurrSection()
 		currRowData = m.getCurrRowData()
 	)
@@ -150,8 +150,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = m.updateSection(currSection.GetId(), currSection.GetType(), msg)
 			return m, cmd
 		}
-
-
 
 		switch {
 		case m.isUserDefinedKeybinding(msg):
@@ -285,7 +283,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newSections, fetchSectionsCmds := m.fetchAllViewSections()
 		m.setCurrentViewSections(newSections)
 		m.tabs.SetCurrSectionId(1)
-		cmds = append(cmds, fetchSectionsCmds, m.tabs.Init(), fetchUser,
+		cmds = append(cmds, fetchSectionsCmds, m.tabs.Init(),
 			m.doRefreshAtInterval(), m.doUpdateFooterAtInterval())
 
 	case intervalRefresh:
@@ -682,13 +680,6 @@ func (m *Model) renderRunningTask() string {
 
 type userFetchedMsg struct {
 	user string
-}
-
-func fetchUser() tea.Msg {
-	// Data fetching removed for UI skeleton
-	return userFetchedMsg{
-		user: "mockuser",
-	}
 }
 
 type intervalRefresh time.Time

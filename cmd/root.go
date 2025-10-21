@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
-	"github.com/dlvhdr/reminders-dashboard/v4/internal/git"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
 	dctx "github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
@@ -42,28 +41,25 @@ var (
 	logo = lipgloss.NewStyle().Foreground(dctx.LogoColor).MarginBottom(1).SetString(constants.Logo)
 
 	rootCmd = &cobra.Command{
-		Use: "gh dash",
+		Use: "reminders-dashboard",
 		Long: lipgloss.JoinVertical(lipgloss.Left, logo.Render(),
-			"A rich terminal UI for GitHub that doesn't break your flow.",
+			"A terminal UI for viewing reminders.",
 			"Visit https://reminders-dashboard.dev for the docs."),
-		Short:   "A rich terminal UI for GitHub that doesn't break your flow.",
+		Short:   "A terminal UI for viewing reminders.",
 		Version: "",
 		Example: `
-# Running without arguments will either:
-#   - Use the global configuration file
-#   - Use a local .reminders-dashboard.yml file if in a git repo
-gh dash
+# Running without arguments will use the global configuration file
+reminders-dashboard
 
 # Run with a specific configuration file
-gh dash --config /path/to/configuration/file.yml
+reminders-dashboard --config /path/to/configuration/file.yml
 
 # Run with debug logging to debug.log
-gh dash --debug
+reminders-dashboard --debug
 
 # Print version
-gh dash -v
+reminders-dashboard -v
 	`,
-		Args: cobra.MaximumNArgs(1),
 	}
 )
 
@@ -129,9 +125,8 @@ func init() {
 		"",
 		`use this configuration file
 (default lookup:
-  1. a .reminders-dashboard.yml file if inside a git repo
-  2. $GH_DASH_CONFIG env var
-  3. $XDG_CONFIG_HOME/reminders-dashboard/config.yml
+  1. $GH_DASH_CONFIG env var
+  2. $XDG_CONFIG_HOME/reminders-dashboard/config.yml
 )`,
 	)
 	err := rootCmd.MarkPersistentFlagFilename("config", "yaml", "yml")
@@ -162,18 +157,6 @@ func init() {
 	)
 
 	rootCmd.Run = func(_ *cobra.Command, args []string) {
-		var repo string
-		repos := config.IsFeatureEnabled(config.FF_REPO_VIEW)
-		if repos && len(args) > 0 {
-			repo = args[0]
-		}
-
-		if repo == "" {
-			r, err := git.GetRepoInPwd()
-			if err == nil && r != nil {
-				repo = r.Path()
-			}
-		}
 		debug, err := rootCmd.Flags().GetBool("debug")
 		if err != nil {
 			log.Fatal("Cannot parse debug flag", err)
@@ -185,7 +168,7 @@ func init() {
 		lipgloss.SetHasDarkBackground(termenv.HasDarkBackground())
 		markdown.InitializeMarkdownStyle(termenv.HasDarkBackground())
 
-		model, logger := createModel(config.Location{RepoPath: repo, ConfigFlag: cfgFlag}, debug)
+		model, logger := createModel(config.Location{RepoPath: "", ConfigFlag: cfgFlag}, debug)
 		if logger != nil {
 			defer logger.Close()
 		}

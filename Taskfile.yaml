@@ -47,7 +47,7 @@ tasks:
   fmt:
     desc: Run gofumpt
     cmds:
-      - gofumpt -w $(git ls-files '*.go')
+      - find . -name '*.go' -type f -exec gofumpt -w {} +
 
   check-nerd-font:
     cmds:

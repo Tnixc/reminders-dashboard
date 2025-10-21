@@ -6,8 +6,7 @@
     "PATH": "$PATH:$PWD/.devbox/go/bin"
   },
   "packages": {
-    "git": "latest",
-    "gh": "latest",
+
     "go": "1.23",
     "golangci-lint": "2.3.1",
     "gofumpt": "0.8.0",

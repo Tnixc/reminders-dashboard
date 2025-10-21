@@ -12,7 +12,7 @@ import (
 	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
-	"github.com/dlvhdr/reminders-dashboard/v4/internal/git"
+
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/keys"
@@ -141,9 +141,6 @@ func (m *Model) renderViewSwitcher(ctx *context.ProgramContext) string {
 	var repo string
 	if m.ctx.RepoPath != "" {
 		name := path.Base(m.ctx.RepoPath)
-		if m.ctx.RepoUrl != "" {
-			name = git.GetRepoShortName(m.ctx.RepoUrl)
-		}
 		repo = ctx.Styles.Common.FooterStyle.Render(fmt.Sprintf(" %s", name))
 	}
 

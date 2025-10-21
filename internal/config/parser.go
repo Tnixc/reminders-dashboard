@@ -326,16 +326,6 @@ func (parser ConfigParser) getDefaultConfigFileOrCreateIfMissing(repoPath string
 	// First try GH_DASH_CONFIG
 	if ghDashConfig != "" {
 		configFilePath = ghDashConfig
-		// Then try to see if we're currently in a git repo
-	} else if repoPath != "" {
-		basename := repoPath + "/." + DashDir
-		repoConfigToml := basename + ".toml"
-		if _, err := os.Stat(repoConfigToml); err == nil {
-			configFilePath = repoConfigToml
-		}
-		if configFilePath != "" {
-			return configFilePath, nil
-		}
 	}
 
 	// Then fallback to global config
