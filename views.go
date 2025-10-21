@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -83,10 +84,19 @@ func (m model) renderNormalLayout(contentHeight int, footer string) string {
 	// Render sidebar
 	sidebar := m.renderSidebar(sidebarWidth, contentHeight)
 
-	// Right-align sidebar by placing it after main content
+	// Insert flexible spacer so the sidebar hugs the right edge
+	mainActualWidth := lipgloss.Width(mainContent)
+	sidebarActualWidth := lipgloss.Width(sidebar)
+	spacerWidth := m.width - mainActualWidth - sidebarActualWidth
+	if spacerWidth < 0 {
+		spacerWidth = 0
+	}
+	spacer := strings.Repeat(" ", spacerWidth)
+
 	content := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		mainContent,
+		spacer,
 		sidebar,
 	)
 
@@ -409,8 +419,8 @@ func (m model) renderSidebar(width, height int) string {
 		settingsButtonHeight = height - calendarHeight - 2
 	}
 
-	settingsButton := m.renderSettingsButton(width, settingsButtonHeight)
-	calendar := m.renderCalendar(width, calendarHeight)
+	settingsButton := m.renderSettingsButton(width-4, settingsButtonHeight)
+	calendar := m.renderCalendar(width-4, calendarHeight)
 
 	// Join sections vertically
 	content := lipgloss.JoinVertical(lipgloss.Right,
