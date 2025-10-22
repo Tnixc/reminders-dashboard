@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	bbHelp "github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	zone "github.com/lrstanley/bubblezone"
 
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
 
-	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/keys"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/utils"
@@ -73,12 +72,15 @@ func (m Model) View() string {
 			Foreground(m.ctx.Theme.SelectedBackground).
 			Padding(0, 1).
 			Render("? help")
-		donationIndicator := zone.Mark("donate", lipgloss.NewStyle().
+
+		// Show current date and time
+		now := time.Now()
+		dateTimeIndicator := lipgloss.NewStyle().
 			Background(m.ctx.Theme.SelectedBackground).
-			Foreground(m.ctx.Theme.WarningText).
+			Foreground(m.ctx.Theme.PrimaryText).
 			Padding(0, 1).
-			Underline(true).
-			Render(fmt.Sprintf("%s donate", constants.DonateIcon)))
+			Render(now.Format("Monday, January 2, 2006 • 3:04:05 PM"))
+
 		viewSwitcher := m.renderViewSwitcher(m.ctx)
 		leftSection := ""
 		if m.leftSection != nil {
@@ -100,11 +102,11 @@ func (m Model) View() string {
 							lipgloss.Width(rightSection)-
 							lipgloss.Width(
 								helpIndicator,
-							)-lipgloss.Width(donationIndicator),
+							)-lipgloss.Width(dateTimeIndicator),
 					)))
 
 		footer = m.ctx.Styles.Common.FooterStyle.
-			Render(lipgloss.JoinHorizontal(lipgloss.Top, viewSwitcher, leftSection, spacing, rightSection, donationIndicator, helpIndicator))
+			Render(lipgloss.JoinHorizontal(lipgloss.Top, viewSwitcher, leftSection, spacing, rightSection, dateTimeIndicator, helpIndicator))
 	}
 
 	if m.ShowAll {
