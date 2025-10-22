@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"runtime/debug"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -532,13 +531,83 @@ func (m *Model) syncSidebar() tea.Cmd {
 
 	switch row := currRowData.(type) {
 	case *data.Reminder:
-		// For now, just show basic info
-		content := fmt.Sprintf("Title: %s\nList: %s\nDue: %s\nPriority: %s\nDone: %t",
-			row.Title, row.List, row.DueDate.Format("2006-01-02"), strconv.Itoa(row.Priority), row.IsCompleted)
+		content := m.formatReminderSidebar(row)
 		m.sidebar.SetContent(content)
 	}
 
 	return nil
+}
+
+func (m *Model) formatReminderSidebar(reminder *data.Reminder) string {
+	sidebarWidth := m.sidebar.GetSidebarContentWidth()
+
+	// Heading style - bold and prominent
+	headingStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(m.ctx.Theme.PrimaryText).
+		MarginTop(1).
+		MarginBottom(0)
+
+	// Content style - regular text
+	contentStyle := lipgloss.NewStyle().
+		Foreground(m.ctx.Theme.SecondaryText).
+		MarginBottom(1).
+		Width(sidebarWidth - m.ctx.Styles.Sidebar.ContentPadding*2)
+
+	// Divider style
+	dividerStyle := lipgloss.NewStyle().
+		Foreground(m.ctx.Theme.FaintBorder).
+		MarginTop(0).
+		MarginBottom(0)
+
+	var sections []string
+
+	// Title section
+	sections = append(sections, headingStyle.Render("TITLE"))
+	sections = append(sections, contentStyle.Render(reminder.Title))
+	sections = append(sections, dividerStyle.Render(strings.Repeat("─", sidebarWidth-m.ctx.Styles.Sidebar.ContentPadding*2)))
+
+	// List section
+	sections = append(sections, headingStyle.Render("LIST"))
+	sections = append(sections, contentStyle.Render(reminder.List))
+	sections = append(sections, dividerStyle.Render(strings.Repeat("─", sidebarWidth-m.ctx.Styles.Sidebar.ContentPadding*2)))
+
+	// Due Date section
+	sections = append(sections, headingStyle.Render("DUE DATE"))
+	dueDate := "Not set"
+	if !reminder.DueDate.IsZero() {
+		dueDate = reminder.DueDate.Format("Mon, Jan 2, 2006 at 3:04 PM")
+	}
+	sections = append(sections, contentStyle.Render(dueDate))
+	sections = append(sections, dividerStyle.Render(strings.Repeat("─", sidebarWidth-m.ctx.Styles.Sidebar.ContentPadding*2)))
+
+	// Priority section
+	sections = append(sections, headingStyle.Render("PRIORITY"))
+	priorityText := fmt.Sprintf("%d", reminder.Priority)
+	if reminder.Priority == 0 {
+		priorityText = "None"
+	}
+	sections = append(sections, contentStyle.Render(priorityText))
+
+	// Notes section (only if present)
+	if reminder.Notes != "" {
+		sections = append(sections, dividerStyle.Render(strings.Repeat("─", sidebarWidth-m.ctx.Styles.Sidebar.ContentPadding*2)))
+		sections = append(sections, headingStyle.Render("NOTES"))
+		sections = append(sections, contentStyle.Render(reminder.Notes))
+	}
+
+	// Status section
+	sections = append(sections, dividerStyle.Render(strings.Repeat("─", sidebarWidth-m.ctx.Styles.Sidebar.ContentPadding*2)))
+	sections = append(sections, headingStyle.Render("STATUS"))
+	status := "Pending"
+	statusStyle := contentStyle
+	if reminder.IsCompleted {
+		status = "✓ Completed"
+		statusStyle = contentStyle.Foreground(m.ctx.Theme.SuccessText)
+	}
+	sections = append(sections, statusStyle.Render(status))
+
+	return lipgloss.JoinVertical(lipgloss.Left, sections...)
 }
 
 func (m *Model) fetchAllViewSections() ([]section.Section, tea.Cmd) {
