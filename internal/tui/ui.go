@@ -446,7 +446,8 @@ func (m Model) View() string {
 		s.WriteString(m.footer.View())
 	}
 
-	return zone.Scan(s.String())
+	// Add 1 character padding on all sides of the app
+	return zone.Scan(lipgloss.NewStyle().Padding(1).Render(s.String()))
 }
 
 type initMsg struct {
@@ -466,13 +467,15 @@ func (m *Model) onViewedRowChanged() tea.Cmd {
 
 func (m *Model) onWindowSizeChanged(msg tea.WindowSizeMsg) {
 	log.Debug("window size changed", "width", msg.Width, "height", msg.Height)
+	// Account for 1 character padding on top and bottom (2 lines total)
+	paddingHeight := 2
 	m.footer.SetWidth(msg.Width)
 	m.ctx.ScreenWidth = msg.Width
 	m.ctx.ScreenHeight = msg.Height
 	if m.footer.ShowAll {
-		m.ctx.MainContentHeight = msg.Height - common.ExpandedHelpHeight
+		m.ctx.MainContentHeight = msg.Height - paddingHeight - common.ExpandedHelpHeight
 	} else {
-		m.ctx.MainContentHeight = msg.Height - common.FooterHeight
+		m.ctx.MainContentHeight = msg.Height - paddingHeight - common.FooterHeight
 	}
 	m.syncMainContentWidth()
 }
@@ -510,11 +513,13 @@ func (m *Model) updateCurrentSection(msg tea.Msg) (cmd tea.Cmd) {
 }
 
 func (m *Model) syncMainContentWidth() {
+	// Account for 1 character padding on left and right (2 chars total)
+	paddingWidth := 2
 	sideBarOffset := 0
 	if m.sidebar.IsOpen {
 		sideBarOffset = m.ctx.Config.Defaults.Preview.Width
 	}
-	m.ctx.MainContentWidth = m.ctx.ScreenWidth - sideBarOffset
+	m.ctx.MainContentWidth = m.ctx.ScreenWidth - paddingWidth - sideBarOffset
 }
 
 func (m *Model) syncSidebar() tea.Cmd {

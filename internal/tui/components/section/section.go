@@ -121,12 +121,11 @@ func NewModel(
 		m.IsFilteredByCurrentRemote = false
 	}
 
-	// Calculate table dimensions accounting for top spacing (3 lines) and search bar (3 lines)
+	// Calculate table dimensions accounting for search bar
 	sectionDimensions := m.GetDimensions()
-	topSpacingHeight := 3
 	tableDimensions := constants.Dimensions{
 		Width:  sectionDimensions.Width,
-		Height: sectionDimensions.Height - topSpacingHeight - common.SearchHeight,
+		Height: sectionDimensions.Height - common.SearchHeight,
 	}
 
 	m.Table = table.NewModel(
@@ -277,10 +276,9 @@ func (m *BaseModel) enrichSearchWithTemplateVars() string {
 func (m *BaseModel) UpdateProgramContext(ctx *context.ProgramContext) {
 	m.Ctx = ctx
 	newDimensions := m.GetDimensions()
-	// Account for top spacing (3 lines) and search bar height
-	topSpacingHeight := 3
+	// Account for search bar height
 	tableDimensions := constants.Dimensions{
-		Height: newDimensions.Height - topSpacingHeight - common.SearchHeight,
+		Height: newDimensions.Height - common.SearchHeight,
 		Width:  newDimensions.Width,
 	}
 	m.Table.SetDimensions(tableDimensions)
@@ -427,13 +425,10 @@ func (m *BaseModel) GetMainContent() string {
 }
 
 func (m *BaseModel) View() string {
-	// Add 3 lines of spacing at the top
-	topSpacing := "\n\n\n"
 	search := m.SearchBar.View(m.Ctx)
 	return m.Ctx.Styles.Section.ContainerStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
-			topSpacing,
 			search,
 			m.GetMainContent(),
 		),
