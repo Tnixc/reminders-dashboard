@@ -64,7 +64,6 @@ func (m Model) View() string {
 	c := m.carousel.View()
 	return m.ctx.Styles.Tabs.TabsRow.
 		Width(m.ctx.ScreenWidth).
-		Height(common.HeaderHeight).
 		Render(c)
 }
 
@@ -95,7 +94,7 @@ func (m *Model) SetSections(sections []section.Section) {
 	for _, s := range sections {
 		tab := SectionTab{section: s, spinner: spinner.New(
 			spinner.WithSpinner(spinner.Dot), spinner.WithStyle(
-				lipgloss.NewStyle().Foreground(m.ctx.Theme.FaintText).PaddingLeft(2)))}
+				lipgloss.NewStyle().Foreground(m.ctx.Theme.FaintText).Background(m.ctx.Theme.SelectedBackground).PaddingLeft(2)))}
 		sectionTabs = append(sectionTabs, tab)
 	}
 	m.sectionTabs = sectionTabs

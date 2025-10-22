@@ -437,7 +437,6 @@ func (m Model) View() string {
 	if m.ctx.View == config.RemindersView {
 		s.WriteString(m.tabs.View())
 	}
-	s.WriteString("\n")
 	content := "No sections defined"
 	currSection := m.getCurrSection()
 	if currSection != nil {

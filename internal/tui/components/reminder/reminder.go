@@ -54,62 +54,103 @@ func (r *Reminder) renderTitle(isSelected bool) string {
 	}
 	style := r.getTextStyle()
 	if isSelected {
-		style = style.Bold(true).Foreground(r.Ctx.Theme.PrimaryText)
+		style = style.Bold(true).Foreground(r.Ctx.Theme.PrimaryText).Background(r.Ctx.Theme.SelectedBackground)
 	}
-	return style.Render(r.Data.Title)
+	title := style.Render(r.Data.Title)
+	list := r.renderList(isSelected)
+	return lipgloss.JoinVertical(lipgloss.Left, title, list)
 }
 
-func (r *Reminder) renderList() string {
+func (r *Reminder) renderList(isSelected bool) string {
 	if r.Data == nil {
 		return ""
 	}
+	
+	// Create badge style with colored background and inverted text
+	badgeStyle := lipgloss.NewStyle().
+		Padding(0, 1).
+		Bold(true)
+	
 	color := r.Ctx.Config.ListColors[r.Data.List]
 	if color != "" {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(r.Data.List)
+		badgeStyle = badgeStyle.
+			Background(lipgloss.Color(color)).
+			Foreground(r.Ctx.Theme.InvertedText)
+	} else {
+		badgeStyle = badgeStyle.
+			Background(r.Ctx.Theme.FaintBorder).
+			Foreground(r.Ctx.Theme.PrimaryText)
 	}
-	return r.getTextStyle().Render(r.Data.List)
+	
+	badge := badgeStyle.Render(r.Data.List)
+	
+	// If selected, wrap in a container with selected background to fill the cell
+	if isSelected {
+		containerStyle := lipgloss.NewStyle().Background(r.Ctx.Theme.SelectedBackground)
+		return containerStyle.Render(badge)
+	}
+	
+	return badge
 }
 
-func (r *Reminder) renderDueIn() string {
+func (r *Reminder) renderDueIn(isSelected bool) string {
 	if r.Data == nil {
 		return ""
 	}
 	dueInOutput := utils.TimeUntil(r.Data.DueDate)
 	urgencyColor := r.getUrgencyColor(r.Data.DueDate)
-	return r.getTextStyle().Foreground(urgencyColor).Bold(true).Render(dueInOutput)
+	
+	dueInStyle := r.getTextStyle().Foreground(urgencyColor).Bold(true)
+	if isSelected {
+		dueInStyle = dueInStyle.Background(r.Ctx.Theme.SelectedBackground)
+	}
+	dueIn := dueInStyle.Render(dueInOutput)
+	
+	date := r.renderDate(isSelected)
+	return lipgloss.JoinVertical(lipgloss.Left, dueIn, date)
 }
 
-func (r *Reminder) renderDate() string {
+func (r *Reminder) renderDate(isSelected bool) string {
 	if r.Data == nil {
 		return ""
 	}
-	return r.getTextStyle().Render(r.Data.DueDate.Format("15:04, 02 Jan 2006"))
+	dateStyle := r.getTextStyle()
+	if isSelected {
+		dateStyle = dateStyle.Background(r.Ctx.Theme.SelectedBackground)
+	}
+	return dateStyle.Render(r.Data.DueDate.Format("15:04, 02 Jan 2006"))
 }
 
-func (r *Reminder) renderPriority() string {
+func (r *Reminder) renderPriority(isSelected bool) string {
 	if r.Data == nil {
 		return ""
 	}
-	return r.getTextStyle().Render(strconv.Itoa(r.Data.Priority))
+	priorityStyle := r.getTextStyle()
+	if isSelected {
+		priorityStyle = priorityStyle.Background(r.Ctx.Theme.SelectedBackground)
+	}
+	return priorityStyle.Render(strconv.Itoa(r.Data.Priority))
 }
 
-func (r *Reminder) renderCompleted() string {
+func (r *Reminder) renderCompleted(isSelected bool) string {
 	if r.Data == nil {
 		return ""
+	}
+	completedStyle := r.getTextStyle()
+	if isSelected {
+		completedStyle = completedStyle.Background(r.Ctx.Theme.SelectedBackground)
 	}
 	if r.Data.IsCompleted {
-		return r.getTextStyle().Foreground(r.Ctx.Theme.SuccessText).Render("✓")
+		return completedStyle.Foreground(r.Ctx.Theme.SuccessText).Render("✓")
 	}
-	return r.getTextStyle().Foreground(r.Ctx.Theme.FaintText).Render("○")
+	return completedStyle.Foreground(r.Ctx.Theme.FaintText).Render("○")
 }
 
 func (r *Reminder) ToTableRow(isSelected bool) table.Row {
 	return table.Row{
 		r.renderTitle(isSelected),
-		r.renderList(),
-		r.renderDueIn(),
-		r.renderDate(),
-		r.renderPriority(),
-		r.renderCompleted(),
+		r.renderDueIn(isSelected),
+		r.renderPriority(isSelected),
+		r.renderCompleted(isSelected),
 	}
 }

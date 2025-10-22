@@ -279,7 +279,7 @@ func (m *Model) UpdateSize() {
 		}
 	}
 
-	m.content = lipgloss.NewStyle().Height(m.height).Render(
+	m.content = lipgloss.NewStyle().Height(m.height).Width(m.width).Render(
 		lipgloss.JoinHorizontal(lipgloss.Center, loIndicator, itemsContent, roIndicator))
 }
 

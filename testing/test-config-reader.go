@@ -105,10 +105,17 @@ func main() {
 		if cfg.Theme.Colors != nil {
 			fmt.Println()
 			fmt.Println("--- Theme Colors ---")
-			fmt.Printf("Text Primary:              %s\n", cfg.Theme.Colors.Inline.Text.Primary)
-			fmt.Printf("Text Secondary:            %s\n", cfg.Theme.Colors.Inline.Text.Secondary)
-			fmt.Printf("Border Primary:            %s\n", cfg.Theme.Colors.Inline.Border.Primary)
-			fmt.Printf("Background Selected:       %s\n", cfg.Theme.Colors.Inline.Background.Selected)
+			fmt.Printf("Text Primary:              %s\n", cfg.Theme.Colors.Text.Primary)
+			fmt.Printf("Text Secondary:            %s\n", cfg.Theme.Colors.Text.Secondary)
+			fmt.Printf("Text Faint:                %s\n", cfg.Theme.Colors.Text.Faint)
+			fmt.Printf("Text Inverted:             %s\n", cfg.Theme.Colors.Text.Inverted)
+			fmt.Printf("Text Success:              %s\n", cfg.Theme.Colors.Text.Success)
+			fmt.Printf("Text Warning:              %s\n", cfg.Theme.Colors.Text.Warning)
+			fmt.Printf("Text Error:                %s\n", cfg.Theme.Colors.Text.Error)
+			fmt.Printf("Border Primary:            %s\n", cfg.Theme.Colors.Border.Primary)
+			fmt.Printf("Border Secondary:          %s\n", cfg.Theme.Colors.Border.Secondary)
+			fmt.Printf("Border Faint:              %s\n", cfg.Theme.Colors.Border.Faint)
+			fmt.Printf("Background Selected:       %s\n", cfg.Theme.Colors.Background.Selected)
 		}
 		fmt.Println()
 	}

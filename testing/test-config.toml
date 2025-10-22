@@ -75,13 +75,7 @@ faint = "#303030"
 [theme.colors.background]
 selected = "#2A2A2A"
 
-[theme.colors.icon]
-newcontributor = "#95E1D3"
-contributor = "#F38181"
-collaborator = "#AA96DA"
-member = "#FCBAD3"
-owner = "#FFFFD2"
-unknownrole = "#A8E6CF"
+
 
 [[keybindings.universal]]
 key = "ctrl+r"

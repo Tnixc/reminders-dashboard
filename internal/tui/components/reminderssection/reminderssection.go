@@ -111,9 +111,7 @@ func GetSectionColumns(
 	sLayout := cfg.Layout
 
 	titleLayout := config.MergeColumnConfigs(dLayout.Title, sLayout.Title)
-	listLayout := config.MergeColumnConfigs(dLayout.List, sLayout.List)
 	dueInLayout := config.MergeColumnConfigs(dLayout.DueIn, sLayout.DueIn)
-	dateLayout := config.MergeColumnConfigs(dLayout.Date, sLayout.Date)
 	priorityLayout := config.MergeColumnConfigs(dLayout.Priority, sLayout.Priority)
 	completedLayout := config.MergeColumnConfigs(dLayout.Completed, sLayout.Completed)
 
@@ -124,19 +122,9 @@ func GetSectionColumns(
 			Hidden: titleLayout.Hidden,
 		},
 		{
-			Title:  "List",
-			Width:  listLayout.Width,
-			Hidden: listLayout.Hidden,
-		},
-		{
 			Title:  "Due In",
 			Width:  dueInLayout.Width,
 			Hidden: dueInLayout.Hidden,
-		},
-		{
-			Title:  "Date",
-			Width:  dateLayout.Width,
-			Hidden: dateLayout.Hidden,
 		},
 		{
 			Title:  "Priority",

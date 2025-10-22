@@ -18,7 +18,6 @@ import (
 
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
-	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/prompt"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/search"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/table"
@@ -188,7 +187,7 @@ type PromptConfirmation interface {
 func (m *BaseModel) GetDimensions() constants.Dimensions {
 	return constants.Dimensions{
 		Width:  m.Ctx.MainContentWidth - m.Ctx.Styles.Section.ContainerStyle.GetHorizontalPadding(),
-		Height: m.Ctx.MainContentHeight - common.SearchHeight,
+		Height: m.Ctx.MainContentHeight,
 	}
 }
 
@@ -404,11 +403,11 @@ func (m *BaseModel) GetMainContent() string {
 }
 
 func (m *BaseModel) View() string {
-	search := m.SearchBar.View(m.Ctx)
+	// search := m.SearchBar.View(m.Ctx)
 	return m.Ctx.Styles.Section.ContainerStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
-			search,
+			// search,
 			m.GetMainContent(),
 		),
 	)

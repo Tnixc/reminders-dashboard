@@ -146,9 +146,7 @@ type ColorTheme struct {
 	Border     ColorThemeBorder     `toml:"border"     validate:"required"`
 }
 
-type ColorThemeConfig struct {
-	Inline ColorTheme `toml:",inline"`
-}
+type ColorThemeConfig = ColorTheme
 
 
 

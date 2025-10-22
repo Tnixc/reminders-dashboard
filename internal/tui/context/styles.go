@@ -201,20 +201,24 @@ func InitStyles(theme theme.Theme) Styles {
 
 	s.Tabs.Tab = lipgloss.NewStyle().
 		Faint(true).
-		Padding(0, 2)
+		Padding(0, 2).
+		Background(theme.SelectedBackground)
 	s.Tabs.ActiveTab = s.Tabs.Tab.
 		Faint(false).
 		Bold(true).
 		Background(theme.SelectedBackground).
 		Foreground(theme.PrimaryText)
-	s.Tabs.OverflowIndicator = s.Common.FaintTextStyle.Bold(true).Padding(0, 1)
+	s.Tabs.OverflowIndicator = s.Common.FaintTextStyle.Bold(true).Padding(0, 1).
+		Background(theme.SelectedBackground)
 	s.Tabs.TabSeparator = lipgloss.NewStyle().
-		Foreground(theme.SecondaryBorder)
+		Foreground(theme.SecondaryBorder).
+		Background(theme.SelectedBackground)
 	s.Tabs.TabsRow = lipgloss.NewStyle().
 		Height(common.TabsContentHeight).
 		BorderBottom(true).
 		BorderStyle(lipgloss.ThickBorder()).
-		BorderBottomForeground(theme.PrimaryBorder)
+		BorderBottomForeground(theme.PrimaryBorder).
+		Background(theme.SelectedBackground)
 	s.ViewSwitcher.Root = lipgloss.NewStyle().
 		Background(s.Common.FooterStyle.GetBackground()).
 		Foreground(theme.InvertedText).
