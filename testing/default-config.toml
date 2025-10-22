@@ -43,6 +43,24 @@ sectionsShowCount = true
 showSeparator = true
 compact = false
 
+# Theme colors - based on Catppuccin Frappe palette
+[theme.colors.text]
+primary = "#c6d0f5"      # Text - main text color
+secondary = "#b5bfe2"    # Subtext 1 - secondary text
+faint = "#a5adce"        # Subtext 0 - faint/muted text
+inverted = "#303446"     # Base - inverted text on light backgrounds
+success = "#a6d189"      # Green - success messages
+warning = "#ef9f76"      # Peach - warnings
+error = "#e78284"        # Red - errors
+
+[theme.colors.background]
+selected = "#414559"     # Surface 0 - selected/highlighted background
+
+[theme.colors.border]
+primary = "#626880"      # Surface 2 - primary borders
+secondary = "#51576d"    # Surface 1 - secondary borders
+faint = "#414559"        # Surface 0 - faint borders
+
 # listColors is empty by default
 [listColors]
 

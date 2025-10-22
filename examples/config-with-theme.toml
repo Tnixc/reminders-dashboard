@@ -1,0 +1,138 @@
+# Example configuration file for reminders-dashboard with custom theme
+# This demonstrates how to configure colors using the Catppuccin Frappe palette
+
+confirmQuit = false
+smartFilteringAtLaunch = true
+
+[defaults]
+remindersLimit = 20
+view = "reminders"
+refetchIntervalMinutes = 0
+dateFormat = ""
+
+[defaults.preview]
+open = true
+width = 50
+
+[defaults.layout.reminders.title]
+width = 30
+
+[defaults.layout.reminders.list]
+width = 20
+
+[defaults.layout.reminders.dueIn]
+width = 15
+
+[defaults.layout.reminders.date]
+width = 16
+
+[defaults.layout.reminders.priority]
+width = 10
+
+[defaults.layout.reminders.completed]
+width = 10
+
+[[remindersSections]]
+title = "All Reminders"
+filters = ""
+
+# UI Theme Configuration
+[theme.ui]
+sectionsShowCount = true
+
+[theme.ui.table]
+showSeparator = true
+compact = false
+
+# Color Theme Configuration
+# Based on Catppuccin Frappe palette: https://github.com/catppuccin/catppuccin
+
+[theme.colors.text]
+# Primary text color - used for main content, selected titles, important text
+primary = "#c6d0f5"      # Text - brightest text color
+
+# Secondary text color - used for less important information
+secondary = "#b5bfe2"    # Subtext 1 - slightly dimmer than primary
+
+# Faint text color - used for very subtle text, placeholders, disabled items
+faint = "#a5adce"        # Subtext 0 - subtle, muted text
+
+# Inverted text color - used when text needs to appear on light/highlighted backgrounds
+inverted = "#303446"     # Base - dark color for inverted text
+
+# Success text color - used for completed items, success messages
+# This color is used for urgency indicators showing items with plenty of time
+success = "#a6d189"      # Green - positive, success states
+
+# Warning text color - used for items due within 48 hours
+# Orange/peach color indicates moderate urgency
+warning = "#ef9f76"      # Peach - warnings, moderate urgency
+
+# Error text color - used for overdue items or items due within 24 hours
+# Red indicates high urgency or problems
+error = "#e78284"        # Red - errors, critical urgency
+
+[theme.colors.background]
+# Selected background color - used when hovering/selecting items in tables
+selected = "#414559"     # Surface 0 - subtle highlight
+
+[theme.colors.border]
+# Primary border color - used for main borders between sections
+primary = "#626880"      # Surface 2 - most visible borders
+
+# Secondary border color - used for less important dividers
+secondary = "#51576d"    # Surface 1 - medium visibility
+
+# Faint border color - used for subtle separators
+faint = "#414559"        # Surface 0 - subtle borders
+
+# List Colors
+# Customize colors for specific reminder lists
+# Use hex colors or terminal color codes (0-255)
+[listColors]
+# Example:
+# "Work" = "#e78284"      # Red for work items
+# "Personal" = "#a6d189"   # Green for personal items
+# "Shopping" = "#ef9f76"   # Orange for shopping lists
+# "Ideas" = "#ca9ee6"      # Purple for ideas
+
+# Keybindings
+[[keybindings.universal]]
+# Add custom keybindings here
+
+[[keybindings.reminders]]
+# Add reminder-specific keybindings here
+
+# Color Reference - Full Catppuccin Frappe Palette
+# ================================================
+# Base colors (darkest to lightest):
+# Crust:    #232634
+# Mantle:   #292c3c
+# Base:     #303446
+# Surface0: #414559
+# Surface1: #51576d
+# Surface2: #626880
+# Overlay0: #737994
+# Overlay1: #838ba7
+# Overlay2: #949cbb
+#
+# Text colors (faintest to brightest):
+# Subtext0: #a5adce
+# Subtext1: #b5bfe2
+# Text:     #c6d0f5
+#
+# Accent colors:
+# Rosewater: #f2d5cf
+# Flamingo:  #eebebe
+# Pink:      #f4b8e4
+# Mauve:     #ca9ee6
+# Red:       #e78284
+# Maroon:    #ea999c
+# Peach:     #ef9f76
+# Yellow:    #e5c890
+# Green:     #a6d189
+# Teal:      #81c8be
+# Sky:       #99d1db
+# Sapphire:  #85c1dc
+# Blue:      #8caaee
+# Lavender:  #babbf1

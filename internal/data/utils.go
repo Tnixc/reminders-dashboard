@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/constants"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/theme"
 )
 
@@ -39,16 +40,16 @@ func GetAuthorRoleIcon(role string, theme theme.Theme) string {
 	// https://docs.github.com/en/graphql/reference/enums#commentauthorassociation
 	switch role {
 	case "FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR", "NONE":
-		return lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor(theme.NewContributorIconColor)).Render(theme.NewContributorIcon)
+		return lipgloss.NewStyle().Foreground(theme.SuccessText).Render(constants.NewContributorIcon)
 	case "COLLABORATOR":
-		return lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor(theme.CollaboratorIconColor)).Render(theme.CollaboratorIcon)
+		return lipgloss.NewStyle().Foreground(theme.WarningText).Render(constants.CollaboratorIcon)
 	case "CONTRIBUTOR":
-		return lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor(theme.ContributorIconColor)).Render(theme.ContributorIcon)
+		return lipgloss.NewStyle().Foreground(theme.SecondaryText).Render(constants.ContributorIcon)
 	case "MEMBER":
-		return lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor(theme.MemberIconColor)).Render(theme.MemberIcon)
+		return lipgloss.NewStyle().Foreground(theme.PrimaryText).Render(constants.MemberIcon)
 	case "OWNER":
-		return lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor(theme.OwnerIconColor)).Render(theme.OwnerIcon)
+		return lipgloss.NewStyle().Foreground(theme.PrimaryText).Render(constants.OwnerIcon)
 	default:
-		return lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor(theme.UnknownRoleIconColor)).Render(theme.UnknownRoleIcon)
+		return lipgloss.NewStyle().Foreground(theme.FaintText).Render(constants.UnknownRoleIcon)
 	}
 }

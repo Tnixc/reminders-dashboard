@@ -118,14 +118,7 @@ type Pager struct {
 
 type HexColor string
 
-type ColorThemeIcon struct {
-	NewContributor HexColor `toml:"newcontributor"   validate:"omitempty,hexcolor"`
-	Contributor    HexColor `toml:"contributor"      validate:"omitempty,hexcolor"`
-	Collaborator   HexColor `toml:"collaborator"     validate:"omitempty,hexcolor"`
-	Member         HexColor `toml:"member"           validate:"omitempty,hexcolor"`
-	Owner          HexColor `toml:"owner"            validate:"omitempty,hexcolor"`
-	UnknownRole    HexColor `toml:"unknownrole"      validate:"omitempty,hexcolor"`
-}
+
 
 type ColorThemeText struct {
 	Primary   HexColor `toml:"primary"   validate:"omitempty,hexcolor"`
@@ -148,7 +141,6 @@ type ColorThemeBackground struct {
 }
 
 type ColorTheme struct {
-	Icon       ColorThemeIcon       `toml:"icon"       validate:"required"`
 	Text       ColorThemeText       `toml:"text"       validate:"required"`
 	Background ColorThemeBackground `toml:"background" validate:"required"`
 	Border     ColorThemeBorder     `toml:"border"     validate:"required"`
@@ -158,18 +150,7 @@ type ColorThemeConfig struct {
 	Inline ColorTheme `toml:",inline"`
 }
 
-type IconTheme struct {
-	NewContributor string `toml:"newcontributor,omitempty"`
-	Contributor    string `toml:"contributor,omitempty"`
-	Collaborator   string `toml:"collaborator,omitempty"`
-	Member         string `toml:"member,omitempty"`
-	Owner          string `toml:"owner,omitempty"`
-	UnknownRole    string `toml:"unknownrole,omitempty"`
-}
 
-type IconThemeConfig struct {
-	Inline IconTheme `toml:",inline"`
-}
 
 type TableUIThemeConfig struct {
 	ShowSeparator bool `toml:"showSeparator" default:"true"`
@@ -184,7 +165,6 @@ type UIThemeConfig struct {
 type ThemeConfig struct {
 	Ui     UIThemeConfig     `toml:"ui,omitempty"     validate:"omitempty"`
 	Colors *ColorThemeConfig `toml:"colors,omitempty" validate:"omitempty"`
-	Icons  *IconThemeConfig  `toml:"icons,omitempty"  validate:"omitempty"`
 }
 
 type Config struct {
