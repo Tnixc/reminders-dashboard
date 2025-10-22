@@ -434,9 +434,7 @@ func (m Model) View() string {
 	}
 
 	s := strings.Builder{}
-	if m.ctx.View == config.RemindersView {
-		s.WriteString(m.tabs.View())
-	}
+	// Tabs removed - search bar is now at the top
 	content := "No sections defined"
 	currSection := m.getCurrSection()
 	if currSection != nil {
@@ -487,9 +485,9 @@ func (m *Model) onWindowSizeChanged(msg tea.WindowSizeMsg) {
 	m.ctx.ScreenWidth = msg.Width
 	m.ctx.ScreenHeight = msg.Height
 	if m.footer.ShowAll {
-		m.ctx.MainContentHeight = msg.Height - common.TabsHeight - common.ExpandedHelpHeight
+		m.ctx.MainContentHeight = msg.Height - common.ExpandedHelpHeight
 	} else {
-		m.ctx.MainContentHeight = msg.Height - common.TabsHeight - common.FooterHeight
+		m.ctx.MainContentHeight = msg.Height - common.FooterHeight
 	}
 	m.syncMainContentWidth()
 }

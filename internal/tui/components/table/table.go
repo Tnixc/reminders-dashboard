@@ -2,6 +2,7 @@ package table
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -251,11 +252,20 @@ func (m *Model) renderHeaderColumns() []string {
 
 func (m *Model) renderHeader() string {
 	headerColumns := m.renderHeaderColumns()
+
+	// Add left padding to account for the indicator column (first column)
+	// The first column is typically 1 character wide for the selection indicator
+	shownColumns := m.getShownColumns()
+	leftPadding := ""
+	if len(shownColumns) > 0 && shownColumns[0].Width != nil {
+		leftPadding = strings.Repeat(" ", *shownColumns[0].Width)
+	}
+
 	header := ansi.Truncate(lipgloss.JoinHorizontal(lipgloss.Top, headerColumns...), m.dimensions.Width, constants.Ellipsis)
 	return m.ctx.Styles.Table.HeaderStyle.
 		Width(m.dimensions.Width).
 		Height(common.TableHeaderHeight).
-		Render(header)
+		Render(leftPadding + header)
 }
 
 func (m *Model) renderBody() string {

@@ -18,6 +18,7 @@ import (
 
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/config"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/data"
+	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/prompt"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/search"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/table"
@@ -84,6 +85,17 @@ func NewModel(
 	options NewSectionOptions,
 ) BaseModel {
 	filters := options.GetConfigFiltersWithCurrentRemoteAdded(ctx)
+	searchPrefix := fmt.Sprintf("is:%s", options.Type)
+	searchPlaceholder := ""
+
+	// Use simpler search UI for reminders
+	if options.Type == "reminder" {
+		searchPrefix = ""
+		searchPlaceholder = "Search reminders by title, list, or notes..."
+		// Start with empty search to show all reminders
+		filters = ""
+	}
+
 	m := BaseModel{
 		Ctx:          ctx,
 		Id:           options.Id,
@@ -94,8 +106,9 @@ func NewModel(
 		SingularForm: options.Singular,
 		PluralForm:   options.Plural,
 		SearchBar: search.NewModel(ctx, search.SearchOptions{
-			Prefix:       fmt.Sprintf("is:%s", options.Type),
+			Prefix:       searchPrefix,
 			InitialValue: filters,
+			Placeholder:  searchPlaceholder,
 		}),
 		SearchValue:               filters,
 		IsSearching:               false,
@@ -107,9 +120,18 @@ func NewModel(
 	if !ctx.Config.SmartFilteringAtLaunch {
 		m.IsFilteredByCurrentRemote = false
 	}
+
+	// Calculate table dimensions accounting for top spacing (3 lines) and search bar (3 lines)
+	sectionDimensions := m.GetDimensions()
+	topSpacingHeight := 3
+	tableDimensions := constants.Dimensions{
+		Width:  sectionDimensions.Width,
+		Height: sectionDimensions.Height - topSpacingHeight - common.SearchHeight,
+	}
+
 	m.Table = table.NewModel(
 		*ctx,
-		m.GetDimensions(),
+		tableDimensions,
 		options.LastUpdated,
 		options.CreatedAt,
 		m.Columns,
@@ -255,8 +277,10 @@ func (m *BaseModel) enrichSearchWithTemplateVars() string {
 func (m *BaseModel) UpdateProgramContext(ctx *context.ProgramContext) {
 	m.Ctx = ctx
 	newDimensions := m.GetDimensions()
+	// Account for top spacing (3 lines) and search bar height
+	topSpacingHeight := 3
 	tableDimensions := constants.Dimensions{
-		Height: newDimensions.Height - 2,
+		Height: newDimensions.Height - topSpacingHeight - common.SearchHeight,
 		Width:  newDimensions.Width,
 	}
 	m.Table.SetDimensions(tableDimensions)
@@ -403,11 +427,14 @@ func (m *BaseModel) GetMainContent() string {
 }
 
 func (m *BaseModel) View() string {
-	// search := m.SearchBar.View(m.Ctx)
+	// Add 3 lines of spacing at the top
+	topSpacing := "\n\n\n"
+	search := m.SearchBar.View(m.Ctx)
 	return m.Ctx.Styles.Section.ContainerStyle.Render(
 		lipgloss.JoinVertical(
 			lipgloss.Left,
-			// search,
+			topSpacing,
+			search,
 			m.GetMainContent(),
 		),
 	)

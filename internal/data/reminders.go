@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os/exec"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/theme"
@@ -78,8 +79,22 @@ func FetchReminders(query string, limit int, pageInfo *PageInfo) (RemindersRespo
 
 	// Filter out completed and convert
 	var active []Reminder
+	searchQuery := strings.ToLower(strings.TrimSpace(query))
+
 	for i, r := range tempReminders {
 		if !r.IsCompleted {
+			// Apply search filter if query is provided
+			if searchQuery != "" {
+				titleMatch := strings.Contains(strings.ToLower(r.Title), searchQuery)
+				notesMatch := strings.Contains(strings.ToLower(r.Notes), searchQuery)
+				listMatch := strings.Contains(strings.ToLower(r.List), searchQuery)
+
+				// Skip this reminder if it doesn't match the search query
+				if !titleMatch && !notesMatch && !listMatch {
+					continue
+				}
+			}
+
 			due, _ := time.Parse(time.RFC3339, r.DueDate)
 			active = append(active, Reminder{
 				Id:          i + 1,
