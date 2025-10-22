@@ -137,7 +137,8 @@ type ColorThemeBorder struct {
 }
 
 type ColorThemeBackground struct {
-	Selected HexColor `toml:"selected" validate:"omitempty,hexcolor"`
+	Selected  HexColor `toml:"selected"  validate:"omitempty,hexcolor"`
+	Indicator HexColor `toml:"indicator" validate:"omitempty,hexcolor"`
 }
 
 type ColorTheme struct {

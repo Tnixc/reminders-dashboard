@@ -185,10 +185,8 @@ func InitStyles(theme theme.Theme) Styles {
 		Foreground(theme.FaintText)
 
 	s.Table.CellStyle = lipgloss.NewStyle().PaddingLeft(1).
-		PaddingRight(1).
-		MaxHeight(1)
-	s.Table.SelectedCellStyle = s.Table.CellStyle.
-		Background(theme.SelectedBackground)
+		PaddingRight(1)
+	s.Table.SelectedCellStyle = s.Table.CellStyle
 	s.Table.TitleCellStyle = s.Table.CellStyle.
 		Bold(true).
 		Foreground(theme.PrimaryText)

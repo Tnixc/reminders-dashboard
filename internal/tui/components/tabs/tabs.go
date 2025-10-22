@@ -7,8 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-
-	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/common"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/carousel"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/components/section"
 	"github.com/dlvhdr/reminders-dashboard/v4/internal/tui/context"

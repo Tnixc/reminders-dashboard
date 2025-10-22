@@ -117,6 +117,11 @@ func GetSectionColumns(
 
 	return []table.Column{
 		{
+			Title:  "",
+			Width:  utils.IntPtr(1),
+			Hidden: utils.BoolPtr(false),
+		},
+		{
 			Title:  "Title",
 			Grow:   utils.BoolPtr(true),
 			Hidden: titleLayout.Hidden,

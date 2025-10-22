@@ -61,6 +61,8 @@ func NewModel(
 	loadingSpinner := spinner.New()
 	loadingSpinner.Spinner = spinner.Dot
 	loadingSpinner.Style = lipgloss.NewStyle().Foreground(ctx.Theme.SecondaryText)
+	// Reserve 1 column for the viewport scrollbar
+	dimensions.Width -= 1
 
 	return Model{
 		ctx:            ctx,
@@ -107,6 +109,8 @@ func (m *Model) SetIsLoading(isLoading bool) {
 }
 
 func (m *Model) SetDimensions(dimensions constants.Dimensions) {
+	// Reserve 1 column for the viewport scrollbar
+	dimensions.Width -= 1
 	m.dimensions = dimensions
 	log.Debug("table.SetDimensions", "dimensions", dimensions)
 	m.rowsViewport.SetDimensions(constants.Dimensions{
@@ -278,8 +282,9 @@ func (m *Model) renderBody() string {
 
 func (m *Model) renderRow(rowId int, headerColumns []string) string {
 	var style lipgloss.Style
+	isSelected := m.rowsViewport.GetCurrItem() == rowId
 
-	if m.rowsViewport.GetCurrItem() == rowId {
+	if isSelected {
 		style = m.ctx.Styles.Table.SelectedCellStyle
 	} else {
 		style = m.ctx.Styles.Table.CellStyle
@@ -299,6 +304,7 @@ func (m *Model) renderRow(rowId int, headerColumns []string) string {
 			colHeight = 2
 		}
 		col := m.Rows[rowId][i]
+
 		renderedCol := style.
 			Width(colWidth).
 			MaxWidth(colWidth).
@@ -310,10 +316,34 @@ func (m *Model) renderRow(rowId int, headerColumns []string) string {
 		headerColId++
 	}
 
-	return m.ctx.Styles.Table.RowStyle.
+	rowContent := lipgloss.JoinHorizontal(lipgloss.Top, renderedColumns...)
+
+	// Add left-side indicator for selected row
+	indicator := " "
+	indicatorStyle := lipgloss.NewStyle()
+	if isSelected {
+		indicator = "▌"
+		indicatorStyle = indicatorStyle.Foreground(m.ctx.Theme.IndicatorColor)
+	}
+
+	colHeight := 1
+	if !m.ctx.Config.Theme.Ui.Table.Compact {
+		colHeight = 2
+	}
+
+	renderedIndicator := indicatorStyle.
+		Height(colHeight).
+		MaxHeight(colHeight).
+		Render(indicator)
+
+	fullRowContent := lipgloss.JoinHorizontal(lipgloss.Top, renderedIndicator, rowContent)
+
+	rowStyle := m.ctx.Styles.Table.RowStyle.
 		BorderBottom(m.ctx.Config.Theme.Ui.Table.ShowSeparator).
-		MaxWidth(m.dimensions.Width).
-		Render(lipgloss.JoinHorizontal(lipgloss.Top, renderedColumns...))
+		Width(m.dimensions.Width).
+		MaxWidth(m.dimensions.Width)
+
+	return rowStyle.Render(fullRowContent)
 }
 
 func (m *Model) UpdateProgramContext(ctx *context.ProgramContext) {

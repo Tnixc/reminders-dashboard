@@ -9,6 +9,7 @@ import (
 
 type Theme struct {
 	SelectedBackground lipgloss.AdaptiveColor // config.Theme.Colors.Background.Selected
+	IndicatorColor     lipgloss.AdaptiveColor // config.Theme.Colors.Indicator
 	PrimaryBorder      lipgloss.AdaptiveColor // config.Theme.Colors.Border.Primary
 	FaintBorder        lipgloss.AdaptiveColor // config.Theme.Colors.Border.Faint
 	SecondaryBorder    lipgloss.AdaptiveColor // config.Theme.Colors.Border.Secondary
@@ -25,6 +26,9 @@ func getDefaultTheme() Theme {
 	return Theme{
 		// Background
 		SelectedBackground: lipgloss.AdaptiveColor{Light: "#949cbb", Dark: "#414559"},
+
+		// Indicator - subtle color for left-side selection indicator
+		IndicatorColor: lipgloss.AdaptiveColor{Light: "#7a82a3", Dark: "#5a6080"},
 
 		// Borders - using surface colors
 		PrimaryBorder:   lipgloss.AdaptiveColor{Light: "#626880", Dark: "#626880"},
@@ -77,6 +81,10 @@ func ParseTheme(cfg *config.Config) Theme {
 		theme.SelectedBackground = _shimHex(
 			cfg.Theme.Colors.Background.Selected,
 			theme.SelectedBackground,
+		)
+		theme.IndicatorColor = _shimHex(
+			cfg.Theme.Colors.Background.Indicator,
+			theme.IndicatorColor,
 		)
 		theme.PrimaryBorder = _shimHex(
 			cfg.Theme.Colors.Border.Primary,

@@ -360,7 +360,8 @@ func (m *Model) MoveRight() {
 
 func (m *Model) renderItem(itemID int, maxWidth int) string {
 	var item string
-	if itemID == m.cursor {
+	isSelected := itemID == m.cursor
+	if isSelected {
 		item = m.styles.Selected.Render(m.items[itemID])
 	} else if itemID < m.cursor {
 		r := m.styles.Item.Render(m.items[itemID])
@@ -376,7 +377,14 @@ func (m *Model) renderItem(itemID int, maxWidth int) string {
 	}
 
 	if m.showSeparators && itemID != len(m.items)-1 {
-		return lipgloss.JoinHorizontal(lipgloss.Center, item, m.styles.Separator.Render(m.separator))
+		separatorStyle := m.styles.Separator
+		if isSelected {
+			// Apply selected background to separator
+			separatorStyle = m.styles.Separator.
+				Background(m.styles.Selected.GetBackground()).
+				Foreground(m.styles.Selected.GetForeground())
+		}
+		return lipgloss.JoinHorizontal(lipgloss.Center, item, separatorStyle.Render(m.separator))
 	}
 
 	return item
