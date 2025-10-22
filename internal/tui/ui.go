@@ -446,8 +446,8 @@ func (m Model) View() string {
 		s.WriteString(m.footer.View())
 	}
 
-	// Add 1 character padding on all sides of the app
-	return zone.Scan(lipgloss.NewStyle().Padding(1).Render(s.String()))
+	// Add padding: 2 lines top, 1 line on other sides
+	return zone.Scan(lipgloss.NewStyle().Padding(2, 1, 1, 1).Render(s.String()))
 }
 
 type initMsg struct {
@@ -467,8 +467,8 @@ func (m *Model) onViewedRowChanged() tea.Cmd {
 
 func (m *Model) onWindowSizeChanged(msg tea.WindowSizeMsg) {
 	log.Debug("window size changed", "width", msg.Width, "height", msg.Height)
-	// Account for 1 character padding on top and bottom (2 lines total)
-	paddingHeight := 2
+	// Account for 2 character padding on top and 1 on bottom (3 lines total)
+	paddingHeight := 3
 	m.footer.SetWidth(msg.Width)
 	m.ctx.ScreenWidth = msg.Width
 	m.ctx.ScreenHeight = msg.Height
