@@ -5,18 +5,22 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	tint "github.com/lrstanley/bubbletint"
 )
 
 var (
+	// Theme for the app
+	theme = tint.TintCatppuccinMocha
+
 	appStyle = lipgloss.NewStyle().Padding(1, 2)
 
 	titleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFDF5")).
-			Background(lipgloss.Color("#25A065")).
+			Foreground(theme.Bg()).
+			Background(theme.Green()).
 			Padding(0, 1)
 
 	statusMessageStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
+				Foreground(theme.BrightGreen()).
 				Render
 )
 
