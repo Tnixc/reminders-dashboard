@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	boxer "github.com/treilik/bubbleboxer"
@@ -99,8 +100,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		// Tab to switch focus between panes
-		if msg.String() == "tab" && m.showRightPane {
+		// Check if list is filtering before processing keybinds
+		leftModel, leftOk := m.tui.ModelMap[leftAddr]
+		isListFiltering := false
+		if leftOk {
+			holder := leftModel.(listModelHolder)
+			if holder.m.list.FilterState() == list.Filtering {
+				isListFiltering = true
+			}
+		}
+
+		// Tab to switch focus between panes (disabled during filtering)
+		if msg.String() == "tab" && m.showRightPane && !isListFiltering {
 			if m.focusedPane == leftAddr {
 				m.focusedPane = rightAddr
 			} else {
@@ -109,8 +120,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Toggle right pane with 's' key
-		if msg.String() == "s" {
+		// Toggle right pane with 's' key (disabled during filtering)
+		if msg.String() == "s" && !isListFiltering {
 			m.showRightPane = !m.showRightPane
 			if m.showRightPane {
 				m.focusedPane = rightAddr // Focus sidebar when shown
@@ -150,15 +161,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return v, nil
 			})
 		} else if m.focusedPane == rightAddr && m.showRightPane {
-			// Update picker and sync back to model
-			updatedPicker, pickerCmd := m.picker.Update(keyMsg)
-			m.picker = updatedPicker.(listPicker)
-			cmds = append(cmds, pickerCmd)
+			// Check if list is filtering - if so, don't send keys to picker
+			leftModel, leftOk := m.tui.ModelMap[leftAddr]
+			isListFiltering := false
+			if leftOk {
+				holder := leftModel.(listModelHolder)
+				if holder.m.list.FilterState() == list.Filtering {
+					isListFiltering = true
+				}
+			}
 
-			// Also update in the boxer model map
-			m.editModel(rightAddr, func(v tea.Model) (tea.Model, error) {
-				return m.picker, nil
-			})
+			// Only update picker if list is not filtering
+			if !isListFiltering {
+				updatedPicker, pickerCmd := m.picker.Update(keyMsg)
+				m.picker = updatedPicker.(listPicker)
+				cmds = append(cmds, pickerCmd)
+
+				// Also update in the boxer model map
+				m.editModel(rightAddr, func(v tea.Model) (tea.Model, error) {
+					return m.picker, nil
+				})
+			}
 		}
 	} else {
 		// Non-keyboard messages go to all panes
