@@ -182,7 +182,7 @@ func (lp listPicker) View() string {
 
 	// Help text
 	output += "\n"
-	helpText := "↑/↓ space a/n"
+	helpText := "↑/↓ space a/n toggle all"
 	if len(helpText) > maxWidth {
 		helpText = helpText[:maxWidth-3] + "..."
 	}

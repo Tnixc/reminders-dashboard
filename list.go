@@ -63,7 +63,8 @@ func urgencyColorToTheme(colorName string) lipgloss.TerminalColor {
 	case "yellow":
 		return theme.White()
 	default:
-		return theme.Fg()
+		// Use subtle/dimmed color for non-urgent items
+		return theme.BrightBlack()
 	}
 }
 
@@ -110,6 +111,9 @@ type listModel struct {
 	itemGenerator *randomItemGenerator
 	keys          *listKeyMap
 	delegateKeys  *delegateKeyMap
+	commonHelp    commonHelp
+	width         int
+	height        int
 }
 
 func newListModel() listModel {
@@ -176,6 +180,7 @@ func newListModel() listModel {
 		Foreground(theme.BrightBlack())
 
 	remindersList.SetShowPagination(true)
+	remindersList.SetShowHelp(false) // Disable list's built-in help, we use commonHelp
 	remindersList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleSpinner,
@@ -192,6 +197,7 @@ func newListModel() listModel {
 		keys:          listKeys,
 		delegateKeys:  delegateKeys,
 		itemGenerator: &itemGenerator,
+		commonHelp:    newCommonHelp(),
 	}
 }
 
@@ -216,8 +222,10 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
 		h, v := appStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.list.SetSize(msg.Width-h, msg.Height-v-1) // Reserve 1 line for help
 
 	case tea.KeyMsg:
 		// Don't match any of the keys below if we're actively filtering.
@@ -266,5 +274,23 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m listModel) View() string {
-	return appStyle.Render(m.list.View())
+	// Render help with large width to avoid wrapping
+	helpView := m.commonHelp.View(1000)
+	helpHeight := lipgloss.Height(helpView)
+
+	// Compute dynamic list height
+	_, v := appStyle.GetFrameSize()
+	listHeight := m.height - v - helpHeight
+	if listHeight < 0 {
+		listHeight = 0
+	}
+
+	// Update list size dynamically
+	h, _ := appStyle.GetFrameSize()
+	listWidth := m.width - h
+	m.list.SetSize(listWidth, listHeight)
+
+	listView := m.list.View()
+
+	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Left, listView, helpView))
 }
