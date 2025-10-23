@@ -16,7 +16,7 @@ var (
 
 	titleStyle = lipgloss.NewStyle().
 			Foreground(theme.Bg()).
-			Background(theme.Green()).
+			Background(theme.Blue()).
 			Padding(0, 1)
 
 	statusMessageStyle = lipgloss.NewStyle().
