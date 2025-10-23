@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,6 +57,7 @@ type Reminder struct {
 	Notes       string    `json:"notes,omitempty"`
 	parsedDate  time.Time // for sorting
 	Color       string    // color from config
+	TimeColor   string    // color for urgency display
 }
 
 func loadReminders() ([]list.Item, error) {
@@ -170,6 +172,81 @@ func getUniqueLists() ([]string, error) {
 	return lists, nil
 }
 
+func calculateRelativeTime(dueDate time.Time) (string, string) {
+	now := time.Now()
+	
+	if dueDate.Before(now) {
+		return "Overdue", "red"
+	}
+	
+	diff := dueDate.Sub(now)
+	
+	// Determine urgency color
+	urgencyColor := "" // default, no special color
+	if diff <= 24*time.Hour {
+		urgencyColor = "red"
+	} else if diff <= 3*24*time.Hour {
+		urgencyColor = "orange"
+	} else if diff <= 7*24*time.Hour {
+		urgencyColor = "yellow"
+	}
+	
+	// Calculate days and hours
+	days := int(diff.Hours() / 24)
+	hours := int(diff.Hours()) % 24
+	
+	// Format the time string
+	var timeStr string
+	if days == 0 {
+		// Less than a day
+		if hours == 1 {
+			timeStr = "1 hour"
+		} else {
+			timeStr = fmt.Sprintf("%d hours", hours)
+		}
+	} else if days == 1 {
+		if hours == 0 {
+			timeStr = "1 day"
+		} else if hours == 1 {
+			timeStr = "1 day 1 hour"
+		} else {
+			timeStr = fmt.Sprintf("1 day %d hours", hours)
+		}
+	} else if days < 7 {
+		if hours == 0 {
+			timeStr = fmt.Sprintf("%d days", days)
+		} else if hours == 1 {
+			timeStr = fmt.Sprintf("%d days 1 hour", days)
+		} else {
+			timeStr = fmt.Sprintf("%d days %d hours", days, hours)
+		}
+	} else {
+		// Format as weeks and days
+		weeks := days / 7
+		remainingDays := days % 7
+		
+		if weeks == 1 {
+			if remainingDays == 0 {
+				timeStr = "1 week"
+			} else if remainingDays == 1 {
+				timeStr = "1 week 1 day"
+			} else {
+				timeStr = fmt.Sprintf("1 week %d days", remainingDays)
+			}
+		} else {
+			if remainingDays == 0 {
+				timeStr = fmt.Sprintf("%d weeks", weeks)
+			} else if remainingDays == 1 {
+				timeStr = fmt.Sprintf("%d weeks 1 day", weeks)
+			} else {
+				timeStr = fmt.Sprintf("%d weeks %d days", weeks, remainingDays)
+			}
+		}
+	}
+	
+	return "Due in " + timeStr, urgencyColor
+}
+
 func reminderToItem(r Reminder) item {
 	var desc string
 
@@ -185,7 +262,13 @@ func reminderToItem(r Reminder) item {
 		} else if dueDate.Year() == now.Year() && dueDate.Month() == now.Month() && dueDate.Day() == now.Day()+1 {
 			desc = "Tomorrow"
 		} else if dueDate.Before(now) {
-			desc = "Overdue"
+			// For overdue items, show the actual date instead of "Overdue"
+			// The urgency will be shown in the colored text
+			if dueDate.Year() == now.Year() {
+				desc = dueDate.Format("Jan 2")
+			} else {
+				desc = dueDate.Format("Jan 2, 2006")
+			}
 		} else {
 			// Show date in format like "Nov 1" or "Nov 1, 2026" if not current year
 			if dueDate.Year() == now.Year() {
@@ -201,10 +284,19 @@ func reminderToItem(r Reminder) item {
 		desc = r.List
 	}
 
+	// Calculate urgency text and color
+	urgencyText := ""
+	urgencyColor := ""
+	if !r.parsedDate.IsZero() {
+		urgencyText, urgencyColor = calculateRelativeTime(r.parsedDate)
+	}
+
 	return item{
-		title:       r.Title,
-		description: desc,
-		listName:    r.List,
-		color:       r.Color,
+		title:        r.Title,
+		description:  desc,
+		listName:     r.List,
+		color:        r.Color,
+		urgencyText:  urgencyText,
+		urgencyColor: urgencyColor,
 	}
 }

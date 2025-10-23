@@ -29,6 +29,8 @@ type item struct {
 	description string
 	listName    string
 	color       string
+	urgencyText string
+	urgencyColor string
 }
 
 func (i item) Title() string {
@@ -41,8 +43,38 @@ func (i item) Title() string {
 	return i.title
 }
 
-func (i item) Description() string { return i.description }
+func (i item) Description() string {
+	if i.urgencyText != "" {
+		// Apply urgency color only to the urgency text
+		urgencyStyle := lipgloss.NewStyle().
+			Foreground(urgencyColorToTheme(i.urgencyColor))
+		coloredUrgency := urgencyStyle.Render(i.urgencyText)
+		
+		// Dim the rest of the description
+		dimmedStyle := lipgloss.NewStyle().
+			Foreground(theme.BrightBlack())
+		dimmedRest := dimmedStyle.Render(" • " + i.description)
+		
+		return coloredUrgency + dimmedRest
+	}
+	return i.description
+}
+
 func (i item) FilterValue() string { return i.title }
+
+// Helper to convert urgency color names to theme colors
+func urgencyColorToTheme(colorName string) lipgloss.TerminalColor {
+	switch colorName {
+	case "red":
+		return theme.Red()
+	case "orange":
+		return theme.Yellow()
+	case "yellow":
+		return theme.White()
+	default:
+		return theme.Fg()
+	}
+}
 
 type listKeyMap struct {
 	toggleSpinner    key.Binding
