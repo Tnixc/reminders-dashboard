@@ -20,7 +20,9 @@ const (
 type model struct {
 	tui              boxer.Boxer
 	showRightPane    bool
+	focusedPane      string // "left" or "right"
 	lastWindowSize   tea.WindowSizeMsg
+	picker           listPicker // Persistent picker state
 }
 
 var quitKeys = key.NewBinding(
@@ -38,22 +40,32 @@ func initialModel() model {
 		Foreground(theme.BrightBlack())
 	boxer.HorizontalSeparator = separatorStyle.Render("│")
 
-	// Create models
-	left := listModelHolder{m: newListModel()}
-	right := stringer("Hello World")
+	// Get unique lists for the picker
+	lists, err := getUniqueLists()
+	if err != nil {
+		lists = []string{} // Fallback to empty if error
+	}
+
+	// Create picker (will be stored in model for persistence)
+	picker := newListPicker(lists)
 
 	// Layout tree definition
 	m := model{
 		tui:           boxer.Boxer{},
 		showRightPane: true,
+		focusedPane:   rightAddr, // Focus sidebar when open
+		picker:        picker,
 	}
 
-	m.tui.LayoutTree = m.buildLayoutTree(left, right)
+	// Create models
+	left := listModelHolder{m: newListModel()}
+
+	m.tui.LayoutTree = m.buildLayoutTree(left, m.picker)
 
 	return m
 }
 
-func (m *model) buildLayoutTree(left listModelHolder, right stringer) boxer.Node {
+func (m *model) buildLayoutTree(left listModelHolder, right listPicker) boxer.Node {
 	if m.showRightPane {
 		// Two-pane layout with separator
 		return boxer.Node{
@@ -79,14 +91,32 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if key.Matches(msg, quitKeys) {
 			return m, tea.Quit
 		}
+
+		// Tab to switch focus between panes
+		if msg.String() == "tab" && m.showRightPane {
+			if m.focusedPane == leftAddr {
+				m.focusedPane = rightAddr
+			} else {
+				m.focusedPane = leftAddr
+			}
+			return m, nil
+		}
+
 		// Toggle right pane with 's' key
 		if msg.String() == "s" {
 			m.showRightPane = !m.showRightPane
+			if m.showRightPane {
+				m.focusedPane = rightAddr // Focus sidebar when shown
+			} else {
+				m.focusedPane = leftAddr // Focus list when sidebar hidden
+			}
 			m.rebuildLayout()
 			// Trigger a resize to update the layout
 			if m.lastWindowSize.Width > 0 {
@@ -94,32 +124,75 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+
 	case tea.WindowSizeMsg:
 		m.lastWindowSize = msg
 		m.tui.UpdateSize(msg)
+
+	case filterChangeMsg:
+		// Filter changed - reload the left pane
+		m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
+			holder := v.(listModelHolder)
+			holder.m.reloadWithFilter(msg.enabledLists)
+			return holder, nil
+		})
+		return m, nil
 	}
 
-	// Update the list model
+	// Only send keyboard input to the focused pane
 	var cmd tea.Cmd
-	m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
-		v, cmd = v.Update(msg)
-		return v, nil
-	})
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		// Route keyboard input only to focused pane
+		if m.focusedPane == leftAddr {
+			m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
+				v, cmd = v.Update(keyMsg)
+				cmds = append(cmds, cmd)
+				return v, nil
+			})
+		} else if m.focusedPane == rightAddr && m.showRightPane {
+			// Update picker and sync back to model
+			updatedPicker, pickerCmd := m.picker.Update(keyMsg)
+			m.picker = updatedPicker.(listPicker)
+			cmds = append(cmds, pickerCmd)
 
-	return m, cmd
+			// Also update in the boxer model map
+			m.editModel(rightAddr, func(v tea.Model) (tea.Model, error) {
+				return m.picker, nil
+			})
+		}
+	} else {
+		// Non-keyboard messages go to all panes
+		m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
+			v, cmd = v.Update(msg)
+			cmds = append(cmds, cmd)
+			return v, nil
+		})
+
+		if m.showRightPane {
+			// Update picker with non-keyboard messages
+			updatedPicker, pickerCmd := m.picker.Update(msg)
+			m.picker = updatedPicker.(listPicker)
+			cmds = append(cmds, pickerCmd)
+
+			// Also update in the boxer model map
+			m.editModel(rightAddr, func(v tea.Model) (tea.Model, error) {
+				return m.picker, nil
+			})
+		}
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m *model) rebuildLayout() {
-	// Get existing models
+	// Get existing left model
 	left, leftOk := m.tui.ModelMap[leftAddr]
-	right, rightOk := m.tui.ModelMap[rightAddr]
 
 	// Clear the model map
 	m.tui.ModelMap = make(map[string]tea.Model)
 
 	// Rebuild with existing models
 	var leftHolder listModelHolder
-	var rightString stringer
 
 	if leftOk {
 		leftHolder = left.(listModelHolder)
@@ -127,13 +200,8 @@ func (m *model) rebuildLayout() {
 		leftHolder = listModelHolder{m: newListModel()}
 	}
 
-	if rightOk {
-		rightString = right.(stringer)
-	} else {
-		rightString = stringer("Hello World")
-	}
-
-	m.tui.LayoutTree = m.buildLayoutTree(leftHolder, rightString)
+	// Use the persistent picker from model
+	m.tui.LayoutTree = m.buildLayoutTree(leftHolder, m.picker)
 }
 
 func (m model) View() string {
@@ -175,19 +243,6 @@ func (l listModelHolder) View() string {
 	return l.m.View()
 }
 
-// stringer is a simple string model with padding
-type stringer string
-
-func (s stringer) String() string {
-	return string(s)
-}
-
-func (s stringer) Init() tea.Cmd                           { return nil }
-func (s stringer) Update(msg tea.Msg) (tea.Model, tea.Cmd) { return s, nil }
-func (s stringer) View() string {
-	// Apply the same padding as the list
-	return appStyle.Render(s.String())
-}
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
