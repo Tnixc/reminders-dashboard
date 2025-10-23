@@ -8,7 +8,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type errMsg error
@@ -49,9 +48,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-		// Adjust height for footer (1 line)
-		msg.Height = msg.Height - 1
-
 	case errMsg:
 		m.err = msg
 		return m, nil
@@ -74,16 +70,7 @@ func (m model) View() string {
 		return ""
 	}
 
-	// Footer
-	footer := lipgloss.NewStyle().
-		Width(m.width).
-		Align(lipgloss.Center).
-		Render("Press q, esc, or ctrl+c to quit")
-
-	// List content
-	listView := m.list.View()
-
-	return lipgloss.JoinVertical(lipgloss.Top, listView, footer)
+	return m.list.View()
 }
 
 func main() {
