@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type delegateKeyMap struct {
@@ -46,6 +47,39 @@ func (d delegateKeyMap) FullHelp() [][]key.Binding {
 
 func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
+
+	// Customize delegate styles with theme colors
+	d.Styles.NormalTitle = lipgloss.NewStyle().
+		Foreground(theme.Fg()).
+		Padding(0, 0, 0, 2)
+
+	d.Styles.NormalDesc = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack()).
+		Padding(0, 0, 0, 2)
+
+	d.Styles.SelectedTitle = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, false, true).
+		BorderForeground(theme.BrightCyan()).
+		Foreground(theme.BrightCyan()).
+		Padding(0, 0, 0, 1)
+
+	d.Styles.SelectedDesc = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, false, true).
+		BorderForeground(theme.BrightCyan()).
+		Foreground(theme.BrightBlack()).
+		Padding(0, 0, 0, 1)
+
+	d.Styles.DimmedTitle = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack()).
+		Padding(0, 0, 0, 2)
+
+	d.Styles.DimmedDesc = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack()).
+		Padding(0, 0, 0, 2)
+
+	d.Styles.FilterMatch = lipgloss.NewStyle().
+		Foreground(theme.Yellow()).
+		Underline(true)
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
 		var title string
