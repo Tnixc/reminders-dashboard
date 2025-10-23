@@ -3,9 +3,13 @@ module github.com/charmbracelet/bubbletea-app-template
 go 1.24.0
 
 require (
+	github.com/BurntSushi/toml v1.3.2
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/lrstanley/bubbletint v1.0.0
+	github.com/lucasb-eyer/go-colorful v1.3.0
+	github.com/treilik/bubbleboxer v0.2.0
 )
 
 require (
@@ -17,8 +21,6 @@ require (
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
-	github.com/lrstanley/bubbletint v1.0.0 // indirect
-	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
@@ -27,7 +29,6 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
-	github.com/treilik/bubbleboxer v0.2.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.3.8 // indirect

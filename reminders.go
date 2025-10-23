@@ -2,12 +2,48 @@ package main
 
 import (
 	"encoding/json"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/charmbracelet/bubbles/list"
 )
+
+type Config struct {
+	ListColors map[string]string `toml:"listColors"`
+}
+
+var listColorMap map[string]string
+
+func loadConfig() error {
+	configPath := filepath.Join(os.ExpandEnv("$HOME"), ".config", "reminders-dashboard", "config.toml")
+	
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		// Config file is optional
+		listColorMap = make(map[string]string)
+		return nil
+	}
+
+	var config Config
+	if err := toml.Unmarshal(data, &config); err != nil {
+		// Invalid config, ignore and continue
+		listColorMap = make(map[string]string)
+		return nil
+	}
+
+	// Store colors with lowercase keys for case-insensitive lookup
+	listColorMap = make(map[string]string)
+	for name, color := range config.ListColors {
+		listColorMap[strings.ToLower(name)] = color
+	}
+
+	return nil
+}
 
 type Reminder struct {
 	Title       string    `json:"title"`
@@ -19,6 +55,7 @@ type Reminder struct {
 	ExternalID  string    `json:"externalId"`
 	Notes       string    `json:"notes,omitempty"`
 	parsedDate  time.Time // for sorting
+	Color       string    // color from config
 }
 
 func loadReminders() ([]list.Item, error) {
@@ -26,6 +63,11 @@ func loadReminders() ([]list.Item, error) {
 }
 
 func loadRemindersFiltered(enabledLists []string) ([]list.Item, error) {
+	// Load config on first call
+	if listColorMap == nil {
+		loadConfig()
+	}
+
 	// Execute the reminders command
 	cmd := exec.Command("reminders", "show-all", "-f", "json")
 	output, err := cmd.Output()
@@ -45,6 +87,9 @@ func loadRemindersFiltered(enabledLists []string) ([]list.Item, error) {
 		if r.IsCompleted {
 			continue
 		}
+
+		// Lookup color for this list (case-insensitive)
+		r.Color = listColorMap[strings.ToLower(r.List)]
 
 		// Filter by enabled lists if specified
 		if enabledLists != nil && len(enabledLists) > 0 {
@@ -159,5 +204,7 @@ func reminderToItem(r Reminder) item {
 	return item{
 		title:       r.Title,
 		description: desc,
+		listName:    r.List,
+		color:       r.Color,
 	}
 }

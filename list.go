@@ -27,9 +27,20 @@ var (
 type item struct {
 	title       string
 	description string
+	listName    string
+	color       string
 }
 
-func (i item) Title() string       { return i.title }
+func (i item) Title() string {
+	if i.color != "" {
+		indicatorStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(i.color))
+		indicator := indicatorStyle.Render("●")
+		return indicator + " " + i.title
+	}
+	return i.title
+}
+
 func (i item) Description() string { return i.description }
 func (i item) FilterValue() string { return i.title }
 
