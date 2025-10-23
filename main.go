@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -13,9 +12,11 @@ import (
 type errMsg error
 
 type model struct {
-	spinner  spinner.Model
+	list     listModel
 	quitting bool
 	err      error
+	width    int
+	height   int
 }
 
 var quitKeys = key.NewBinding(
@@ -24,14 +25,13 @@ var quitKeys = key.NewBinding(
 )
 
 func initialModel() model {
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	return model{spinner: s}
+	return model{
+		list: newListModel(),
+	}
 }
 
 func (m model) Init() tea.Cmd {
-	return m.spinner.Tick
+	return m.list.Init()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -41,33 +41,51 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if key.Matches(msg, quitKeys) {
 			m.quitting = true
 			return m, tea.Quit
-
 		}
-		return m, nil
+
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+
+		// Adjust height for footer (1 line)
+		msg.Height = msg.Height - 1
+
 	case errMsg:
 		m.err = msg
 		return m, nil
-
-	default:
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
 	}
+
+	// Pass message to list
+	var cmd tea.Cmd
+	updatedList, cmd := m.list.Update(msg)
+	m.list = updatedList.(listModel)
+	return m, cmd
 }
 
 func (m model) View() string {
 	if m.err != nil {
 		return m.err.Error()
 	}
-	str := fmt.Sprintf("\n\n   %s Loading forever... %s\n\n", m.spinner.View(), quitKeys.Help().Desc)
-	if m.quitting {
-		return str + "\n"
+
+	// Don't render until we have dimensions
+	if m.width == 0 || m.height == 0 {
+		return ""
 	}
-	return str
+
+	// Footer
+	footer := lipgloss.NewStyle().
+		Width(m.width).
+		Align(lipgloss.Center).
+		Render("Press q, esc, or ctrl+c to quit")
+
+	// List content
+	listView := m.list.View()
+
+	return lipgloss.JoinVertical(lipgloss.Top, listView, footer)
 }
 
 func main() {
-	p := tea.NewProgram(initialModel())
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
