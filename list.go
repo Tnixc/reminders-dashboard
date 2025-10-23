@@ -10,7 +10,7 @@ import (
 
 var (
 	// Theme for the app
-	theme = tint.TintCatppuccinMocha
+	theme = tint.TintSerendipityMidnight
 
 	appStyle = lipgloss.NewStyle().Padding(1, 2)
 
@@ -97,6 +97,50 @@ func newListModel() listModel {
 	remindersList := list.New(items, delegate, 0, 0)
 	remindersList.Title = "Reminders"
 	remindersList.Styles.Title = titleStyle
+
+	// Customize list styles with theme colors
+	remindersList.Styles.PaginationStyle = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack())
+
+	remindersList.Styles.HelpStyle = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack())
+
+	remindersList.Styles.ActivePaginationDot = lipgloss.NewStyle().
+		Foreground(theme.BrightCyan()).
+		SetString("•")
+
+	remindersList.Styles.InactivePaginationDot = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack()).
+		SetString("•")
+
+	remindersList.Styles.FilterPrompt = lipgloss.NewStyle().
+		Foreground(theme.BrightCyan())
+
+	remindersList.Styles.FilterCursor = lipgloss.NewStyle().
+		Foreground(theme.BrightCyan())
+
+	// Customize the help view styles
+	remindersList.Help.Styles.ShortKey = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack())
+
+	remindersList.Help.Styles.ShortDesc = lipgloss.NewStyle().
+		Foreground(theme.Fg())
+
+	remindersList.Help.Styles.ShortSeparator = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack())
+
+	remindersList.Help.Styles.FullKey = lipgloss.NewStyle().
+		Foreground(theme.BrightCyan())
+
+	remindersList.Help.Styles.FullDesc = lipgloss.NewStyle().
+		Foreground(theme.Fg())
+
+	remindersList.Help.Styles.FullSeparator = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack())
+
+	remindersList.Help.Styles.Ellipsis = lipgloss.NewStyle().
+		Foreground(theme.BrightBlack())
+
 	remindersList.SetShowPagination(true)
 	remindersList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
