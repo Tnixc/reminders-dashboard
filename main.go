@@ -31,9 +31,9 @@ func stripErr(n boxer.Node, _ error) boxer.Node {
 }
 
 func initialModel() model {
-	// Style the separator with a subtle color
+	// Style the separator with a subtle theme color
 	separatorStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"})
+		Foreground(theme.BrightBlack())
 	boxer.HorizontalSeparator = separatorStyle.Render("│")
 
 	// Create models
