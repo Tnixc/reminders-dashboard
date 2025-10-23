@@ -203,24 +203,34 @@ func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 	var renderedDesc string
 	if i.urgencyText != "" && strings.HasPrefix(desc, i.urgencyText) {
 		urgencyColor := urgencyColorToTheme(i.urgencyColor)
-		urgencyStyled := lipgloss.NewStyle().Foreground(urgencyColor).Render(i.urgencyText)
-		restText := desc[len(i.urgencyText):]
-		restStyled := lipgloss.NewStyle().Foreground(theme.BrightBlack()).Render(restText)
 
-		combined := urgencyStyled + restStyled
+		// Build the description with proper padding and border first, then apply colors inline
+		var paddingLeft int
+		var borderStr string
 
-		// Apply padding and border for description
 		if isSelected {
-			renderedDesc = lipgloss.NewStyle().
-				Border(lipgloss.NormalBorder(), false, false, false, true).
-				BorderForeground(theme.BrightCyan()).
-				Padding(0, 0, 0, 1).
-				Render(combined)
+			paddingLeft = 1
+			borderStr = lipgloss.NewStyle().
+				Foreground(theme.BrightCyan()).
+				Render("│")
 		} else {
-			renderedDesc = lipgloss.NewStyle().
-				Padding(0, 0, 0, 2).
-				Render(combined)
+			paddingLeft = 2
 		}
+
+		// Render urgency and rest with colors
+		urgencyStyled := lipgloss.NewStyle().Foreground(urgencyColor).Inline(true).Render(i.urgencyText)
+		restText := desc[len(i.urgencyText):]
+		restStyled := lipgloss.NewStyle().Foreground(theme.BrightBlack()).Inline(true).Render(restText)
+
+		// Combine with proper spacing
+		var combined string
+		if isSelected {
+			combined = borderStr + strings.Repeat(" ", paddingLeft) + urgencyStyled + restStyled
+		} else {
+			combined = strings.Repeat(" ", paddingLeft) + urgencyStyled + restStyled
+		}
+
+		renderedDesc = combined
 	} else {
 		renderedDesc = descStyle.Render(desc)
 	}
