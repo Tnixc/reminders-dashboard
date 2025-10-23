@@ -165,6 +165,15 @@ func (m listModel) Init() tea.Cmd {
 	return nil
 }
 
+func (m *listModel) reloadWithFilter(enabledLists []string) {
+	items, err := loadRemindersFiltered(enabledLists)
+	if err != nil {
+		// On error, just keep current items
+		return
+	}
+	m.list.SetItems(items)
+}
+
 func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 

@@ -22,6 +22,10 @@ type Reminder struct {
 }
 
 func loadReminders() ([]list.Item, error) {
+	return loadRemindersFiltered(nil)
+}
+
+func loadRemindersFiltered(enabledLists []string) ([]list.Item, error) {
 	// Execute the reminders command
 	cmd := exec.Command("reminders", "show-all", "-f", "json")
 	output, err := cmd.Output()
@@ -40,6 +44,20 @@ func loadReminders() ([]list.Item, error) {
 	for _, r := range reminders {
 		if r.IsCompleted {
 			continue
+		}
+
+		// Filter by enabled lists if specified
+		if enabledLists != nil && len(enabledLists) > 0 {
+			listEnabled := false
+			for _, enabledList := range enabledLists {
+				if r.List == enabledList {
+					listEnabled = true
+					break
+				}
+			}
+			if !listEnabled {
+				continue
+			}
 		}
 
 		// Parse due date for sorting
@@ -73,6 +91,38 @@ func loadReminders() ([]list.Item, error) {
 	}
 
 	return items, nil
+}
+
+func getUniqueLists() ([]string, error) {
+	// Execute the reminders command
+	cmd := exec.Command("reminders", "show-all", "-f", "json")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse JSON
+	var reminders []Reminder
+	if err := json.Unmarshal(output, &reminders); err != nil {
+		return nil, err
+	}
+
+	// Collect unique list names
+	listSet := make(map[string]bool)
+	for _, r := range reminders {
+		if !r.IsCompleted && r.List != "" {
+			listSet[r.List] = true
+		}
+	}
+
+	// Convert to slice and sort
+	lists := make([]string, 0, len(listSet))
+	for listName := range listSet {
+		lists = append(lists, listName)
+	}
+	sort.Strings(lists)
+
+	return lists, nil
 }
 
 func reminderToItem(r Reminder) item {
