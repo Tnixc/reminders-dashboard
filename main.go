@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	boxer "github.com/treilik/bubbleboxer"
 )
 
@@ -30,6 +31,11 @@ func stripErr(n boxer.Node, _ error) boxer.Node {
 }
 
 func initialModel() model {
+	// Style the separator with a subtle color
+	separatorStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#383838"})
+	boxer.HorizontalSeparator = separatorStyle.Render("│")
+
 	// Create models
 	left := listModelHolder{m: newListModel()}
 	right := stringer("Hello World")
@@ -115,7 +121,7 @@ func (l listModelHolder) View() string {
 	return l.m.View()
 }
 
-// stringer is a simple string model
+// stringer is a simple string model with padding
 type stringer string
 
 func (s stringer) String() string {
@@ -124,7 +130,10 @@ func (s stringer) String() string {
 
 func (s stringer) Init() tea.Cmd                           { return nil }
 func (s stringer) Update(msg tea.Msg) (tea.Model, tea.Cmd) { return s, nil }
-func (s stringer) View() string                            { return s.String() }
+func (s stringer) View() string {
+	// Apply the same padding as the list
+	return appStyle.Render(s.String())
+}
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
