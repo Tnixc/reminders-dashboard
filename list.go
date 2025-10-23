@@ -81,20 +81,20 @@ func newListModel() listModel {
 		listKeys      = newListKeyMap()
 	)
 
-	// Make initial list of items
-	const numItems = 24
-	items := make([]list.Item, numItems)
-	for i := 0; i < numItems; i++ {
-		items[i] = itemGenerator.next()
+	// Load reminders from command
+	items, err := loadReminders()
+	if err != nil {
+		// Fallback to empty list if reminders command fails
+		items = []list.Item{}
 	}
 
 	// Setup list
 	delegate := newItemDelegate(delegateKeys)
-	groceryList := list.New(items, delegate, 0, 0)
-	groceryList.Title = "Groceries"
-	groceryList.Styles.Title = titleStyle
-	groceryList.SetShowPagination(true)
-	groceryList.AdditionalFullHelpKeys = func() []key.Binding {
+	remindersList := list.New(items, delegate, 0, 0)
+	remindersList.Title = "Reminders"
+	remindersList.Styles.Title = titleStyle
+	remindersList.SetShowPagination(true)
+	remindersList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleSpinner,
 			listKeys.insertItem,
@@ -106,7 +106,7 @@ func newListModel() listModel {
 	}
 
 	return listModel{
-		list:          groceryList,
+		list:          remindersList,
 		keys:          listKeys,
 		delegateKeys:  delegateKeys,
 		itemGenerator: &itemGenerator,
