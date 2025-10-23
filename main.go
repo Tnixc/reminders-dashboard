@@ -21,7 +21,7 @@ type model struct {
 }
 
 var quitKeys = key.NewBinding(
-	key.WithKeys("q", "esc", "ctrl+c"),
+	key.WithKeys("q", "ctrl+c"),
 	key.WithHelp("", "press q to quit"),
 )
 
