@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -10,6 +11,7 @@ import (
 type listItem struct {
 	name    string
 	enabled bool
+	color   string
 }
 
 type listPicker struct {
@@ -24,11 +26,17 @@ type filterChangeMsg struct {
 }
 
 func newListPicker(lists []string) listPicker {
+	// Load config on first call if not loaded
+	if listColorMap == nil {
+		loadConfig()
+	}
+
 	items := make([]listItem, len(lists))
 	for i, name := range lists {
 		items[i] = listItem{
 			name:    name,
 			enabled: true, // All enabled by default
+			color:   listColorMap[strings.ToLower(name)], // Lookup color
 		}
 	}
 
@@ -140,6 +148,14 @@ func (lp listPicker) View() string {
 			checkbox = "[✔]"
 		}
 
+		// Create colored indicator if color is configured
+		var indicator string
+		if item.color != "" {
+			indicatorStyle := lipgloss.NewStyle().
+				Foreground(lipgloss.Color(item.color))
+			indicator = indicatorStyle.Render("●")
+		}
+
 		// Truncate name if needed
 		name := item.name
 		if len(name) > maxNameWidth {
@@ -148,6 +164,11 @@ func (lp listPicker) View() string {
 			} else {
 				name = name[:maxNameWidth]
 			}
+		}
+
+		// Add indicator to name if present
+		if indicator != "" {
+			name = indicator + " " + name
 		}
 
 		line := fmt.Sprintf("%s %s %s", cursor, checkbox, name)
