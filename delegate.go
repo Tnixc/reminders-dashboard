@@ -1,18 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-)
-
-var (
-	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
 )
 
 type delegateKeyMap struct {
@@ -33,63 +24,66 @@ func newDelegateKeyMap() *delegateKeyMap {
 	}
 }
 
-type itemDelegate struct {
-	keys *delegateKeyMap
-}
-
-func newItemDelegate(keys *delegateKeyMap) list.ItemDelegate {
-	return itemDelegate{
-		keys: keys,
+// Additional short help entries. This satisfies the help.KeyMap interface and
+// is entirely optional.
+func (d delegateKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		d.choose,
+		d.remove,
 	}
 }
 
-func (d itemDelegate) Height() int {
-	return 1
+// Additional full help entries. This satisfies the help.KeyMap interface and
+// is entirely optional.
+func (d delegateKeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			d.choose,
+			d.remove,
+		},
+	}
 }
 
-func (d itemDelegate) Spacing() int {
-	return 0
-}
+func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
+	d := list.NewDefaultDelegate()
 
-func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
-	var cmd tea.Cmd
+	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
+		var title string
 
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, d.keys.choose):
-			i := m.SelectedItem()
-			if i != nil {
-				return m.NewStatusMessage(statusMessageStyle("You chose: " + i.(item).Title()))
-			}
-
-		case key.Matches(msg, d.keys.remove):
-			index := m.Index()
-			m.RemoveItem(index)
-			if len(m.Items()) == 0 {
-				d.keys.remove.SetEnabled(false)
-			}
-			return m.NewStatusMessage(statusMessageStyle("Deleted " + m.SelectedItem().(item).Title()))
+		if i, ok := m.SelectedItem().(item); ok {
+			title = i.Title()
+		} else {
+			return nil
 		}
-	}
 
-	return cmd
-}
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, keys.choose):
+				return m.NewStatusMessage(statusMessageStyle("You chose " + title))
 
-func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(item)
-	if !ok {
-		return
-	}
-
-	str := fmt.Sprintf("%d. %s", index+1, i.Title())
-
-	fn := itemStyle.Render
-	if index == m.Index() {
-		fn = func(s ...string) string {
-			return selectedItemStyle.Render("> " + s[0])
+			case key.Matches(msg, keys.remove):
+				index := m.Index()
+				m.RemoveItem(index)
+				if len(m.Items()) == 0 {
+					keys.remove.SetEnabled(false)
+				}
+				return m.NewStatusMessage(statusMessageStyle("Deleted " + title))
+			}
 		}
+
+		return nil
 	}
 
-	fmt.Fprint(w, fn(str))
+	help := []key.Binding{keys.choose, keys.remove}
+
+	d.ShortHelpFunc = func() []key.Binding {
+		return help
+	}
+
+	d.FullHelpFunc = func() [][]key.Binding {
+		return [][]key.Binding{help}
+	}
+
+	return d
 }

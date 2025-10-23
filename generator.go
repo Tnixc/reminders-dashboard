@@ -1,82 +1,164 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
+	"sync"
 )
 
-// randomItemGenerator generates random items for the list
 type randomItemGenerator struct {
-	titles       []string
-	descriptions []string
-	titleIndex   int
-	descIndex    int
+	titles     []string
+	descs      []string
+	titleIndex int
+	descIndex  int
+	mtx        *sync.Mutex
+	shuffle    *sync.Once
 }
 
 func (r *randomItemGenerator) reset() {
+	r.mtx = &sync.Mutex{}
+	r.shuffle = &sync.Once{}
+
 	r.titles = []string{
-		"Ramen",
-		"Tomato Soup",
-		"Hamburgers",
-		"Cheeseburgers",
+		"Artichoke",
+		"Baking Flour",
+		"Bananas",
+		"Barley",
+		"Bean Sprouts",
+		"Bitter Melon",
+		"Black Cod",
+		"Blood Orange",
+		"Brown Sugar",
+		"Cashew Apple",
+		"Cashews",
+		"Cat Food",
+		"Coconut Milk",
+		"Cucumber",
+		"Curry Paste",
 		"Currywurst",
-		"Fish and Chips",
-		"Łazanki",
-		"Lobster",
-		"Pasta",
-		"Pizza",
-		"Noodles",
-		"Sushi",
-		"Tacos",
-		"Dumplings",
-		"Burritos",
-		"Pad Thai",
-		"Biryani",
-		"Pho",
-		"Falafel",
-		"Kebab",
-		"Dim Sum",
-		"Ratatouille",
-		"Goulash",
-		"Paella",
+		"Dill",
+		"Dragonfruit",
+		"Dried Shrimp",
+		"Eggs",
+		"Fish Cake",
+		"Furikake",
+		"Garlic",
+		"Gherkin",
+		"Ginger",
+		"Granulated Sugar",
+		"Grapefruit",
+		"Green Onion",
+		"Hazelnuts",
+		"Heavy whipping cream",
+		"Honey Dew",
+		"Horseradish",
+		"Jicama",
+		"Kohlrabi",
+		"Leeks",
+		"Lentils",
+		"Licorice Root",
+		"Meyer Lemons",
+		"Milk",
+		"Molasses",
+		"Muesli",
+		"Nectarine",
+		"Niagamo Root",
+		"Nopal",
+		"Nutella",
+		"Oat Milk",
+		"Oatmeal",
+		"Olives",
+		"Papaya",
+		"Party Gherkin",
+		"Peppers",
+		"Persian Lemons",
+		"Pickle",
+		"Pineapple",
+		"Plantains",
+		"Pocky",
+		"Powdered Sugar",
+		"Quince",
+		"Radish",
+		"Ramps",
+		"Star Anise",
+		"Sweet Potato",
+		"Tamarind",
+		"Unsalted Butter",
+		"Watermelon",
+		"Weißwurst",
+		"Yams",
+		"Yeast",
+		"Yuzu",
+		"Snow Peas",
 	}
 
-	r.descriptions = []string{
-		"Yummy",
-		"Delicious",
-		"Tasty",
-		"Mouth-watering",
+	r.descs = []string{
+		"A little weird",
+		"Bold flavor",
+		"Can't get enough",
+		"Delectable",
+		"Expensive",
+		"Expired",
+		"Exquisite",
+		"Fresh",
+		"Gimme",
+		"In season",
+		"Kind of spicy",
+		"Looks fresh",
+		"Looks good to me",
+		"Maybe not",
+		"My favorite",
+		"Oh my",
+		"On sale",
+		"Organic",
+		"Questionable",
+		"Really fresh",
+		"Refreshing",
+		"Salty",
 		"Scrumptious",
 		"Delectable",
-		"Savory",
-		"Flavorful",
+		"Slightly sweet",
+		"Smells great",
+		"Tasty",
+		"Too ripe",
+		"At last",
+		"What?",
+		"Wow",
+		"Yum",
+		"Maybe",
+		"Sure, why not?",
 	}
 
-	r.titleIndex = 0
-	r.descIndex = 0
+	r.shuffle.Do(func() {
+		shuf := func(x []string) {
+			rand.Shuffle(len(x), func(i, j int) { x[i], x[j] = x[j], x[i] })
+		}
+		shuf(r.titles)
+		shuf(r.descs)
+	})
 }
 
 func (r *randomItemGenerator) next() item {
-	if r.titles == nil || len(r.titles) == 0 {
+	if r.mtx == nil {
 		r.reset()
 	}
 
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	i := item{
+		title:       r.titles[r.titleIndex],
+		description: r.descs[r.descIndex],
+	}
+
+	r.titleIndex++
 	if r.titleIndex >= len(r.titles) {
 		r.titleIndex = 0
 	}
 
-	if r.descIndex >= len(r.descriptions) {
+	r.descIndex++
+	if r.descIndex >= len(r.descs) {
 		r.descIndex = 0
 	}
 
-	title := r.titles[r.titleIndex]
-	desc := r.descriptions[r.descIndex]
-
-	r.titleIndex++
-	r.descIndex = rand.Intn(len(r.descriptions))
-
-	return item{
-		title:       title,
-		description: fmt.Sprintf("%s %s", desc, title),
-	}
+	return i
 }
