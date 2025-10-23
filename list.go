@@ -93,6 +93,7 @@ func newListModel() listModel {
 	groceryList := list.New(items, delegate, 0, 0)
 	groceryList.Title = "Groceries"
 	groceryList.Styles.Title = titleStyle
+	groceryList.SetShowPagination(true)
 	groceryList.AdditionalFullHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			listKeys.toggleSpinner,
