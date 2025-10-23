@@ -34,33 +34,24 @@ type item struct {
 }
 
 func (i item) Title() string {
+	// Return plain text with bullet, no colors (colors applied in delegate)
 	if i.color != "" {
-		indicatorStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color(i.color))
-		indicator := indicatorStyle.Render("●")
-		return indicator + " " + i.title
+		return "● " + i.title
 	}
 	return i.title
 }
 
 func (i item) Description() string {
+	// Return plain text (colors applied in delegate)
 	if i.urgencyText != "" {
-		// Apply urgency color only to the urgency text
-		urgencyStyle := lipgloss.NewStyle().
-			Foreground(urgencyColorToTheme(i.urgencyColor))
-		coloredUrgency := urgencyStyle.Render(i.urgencyText)
-		
-		// Dim the rest of the description
-		dimmedStyle := lipgloss.NewStyle().
-			Foreground(theme.BrightBlack())
-		dimmedRest := dimmedStyle.Render(" • " + i.description)
-		
-		return coloredUrgency + dimmedRest
+		return i.urgencyText + " • " + i.description
 	}
 	return i.description
 }
 
-func (i item) FilterValue() string { return i.title }
+func (i item) FilterValue() string {
+	return i.title
+}
 
 // Helper to convert urgency color names to theme colors
 func urgencyColorToTheme(colorName string) lipgloss.TerminalColor {
