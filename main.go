@@ -142,12 +142,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case filterChangeMsg:
 		// Filter changed - reload the left pane
+		var cmd tea.Cmd
 		m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
 			holder := v.(listModelHolder)
-			holder.m.reloadWithFilter(msg.enabledLists)
+			cmd = holder.m.reloadWithFilter(msg.enabledLists)
 			return holder, nil
 		})
-		return m, nil
+		return m, cmd
 	}
 
 	// Only send keyboard input to the focused pane

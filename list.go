@@ -199,13 +199,16 @@ func (m listModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m *listModel) reloadWithFilter(enabledLists []string) {
+func (m *listModel) reloadWithFilter(enabledLists []string) tea.Cmd {
 	items, err := loadRemindersFiltered(enabledLists)
 	if err != nil {
 		// On error, just keep current items
-		return
+		return nil
 	}
-	m.list.SetItems(items)
+
+	// SetItems returns a command that needs to be executed
+	// This command handles refiltering if a filter is active
+	return m.list.SetItems(items)
 }
 
 func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -247,7 +250,6 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, m.keys.insertItem):
-			m.delegateKeys.remove.SetEnabled(true)
 			newItem := m.itemGenerator.next()
 			insCmd := m.list.InsertItem(0, newItem)
 			statusCmd := m.list.NewStatusMessage(statusMessageStyle("Added " + newItem.Title()))
