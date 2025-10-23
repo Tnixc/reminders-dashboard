@@ -18,7 +18,9 @@ const (
 )
 
 type model struct {
-	tui boxer.Boxer
+	tui              boxer.Boxer
+	showRightPane    bool
+	lastWindowSize   tea.WindowSizeMsg
 }
 
 var quitKeys = key.NewBinding(
@@ -41,21 +43,35 @@ func initialModel() model {
 	right := stringer("Hello World")
 
 	// Layout tree definition
-	m := model{tui: boxer.Boxer{}}
-	m.tui.LayoutTree = boxer.Node{
-		VerticalStacked: false, // horizontal split
-		SizeFunc: func(_ boxer.Node, widthOrHeight int) []int {
-			// Split width 66/33
-			ratio := widthOrHeight / 3
-			return []int{2 * ratio, widthOrHeight - ratio}
-		},
-		Children: []boxer.Node{
-			stripErr(m.tui.CreateLeaf(leftAddr, left)),
-			stripErr(m.tui.CreateLeaf(rightAddr, right)),
-		},
+	m := model{
+		tui:           boxer.Boxer{},
+		showRightPane: true,
 	}
 
+	m.tui.LayoutTree = m.buildLayoutTree(left, right)
+
 	return m
+}
+
+func (m *model) buildLayoutTree(left listModelHolder, right stringer) boxer.Node {
+	if m.showRightPane {
+		// Two-pane layout with separator
+		return boxer.Node{
+			VerticalStacked: false, // horizontal split
+			SizeFunc: func(_ boxer.Node, widthOrHeight int) []int {
+				// Split width 66/33
+				ratio := widthOrHeight / 3
+				return []int{2 * ratio, widthOrHeight - (2 * ratio)}
+			},
+			Children: []boxer.Node{
+				stripErr(m.tui.CreateLeaf(leftAddr, left)),
+				stripErr(m.tui.CreateLeaf(rightAddr, right)),
+			},
+		}
+	} else {
+		// Single pane layout - just the left side
+		return stripErr(m.tui.CreateLeaf(leftAddr, left))
+	}
 }
 
 func (m model) Init() tea.Cmd {
@@ -68,7 +84,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if key.Matches(msg, quitKeys) {
 			return m, tea.Quit
 		}
+		// Toggle right pane with 's' key
+		if msg.String() == "s" {
+			m.showRightPane = !m.showRightPane
+			m.rebuildLayout()
+			// Trigger a resize to update the layout
+			if m.lastWindowSize.Width > 0 {
+				m.tui.UpdateSize(m.lastWindowSize)
+			}
+			return m, nil
+		}
 	case tea.WindowSizeMsg:
+		m.lastWindowSize = msg
 		m.tui.UpdateSize(msg)
 	}
 
@@ -80,6 +107,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	})
 
 	return m, cmd
+}
+
+func (m *model) rebuildLayout() {
+	// Get existing models
+	left, leftOk := m.tui.ModelMap[leftAddr]
+	right, rightOk := m.tui.ModelMap[rightAddr]
+
+	// Clear the model map
+	m.tui.ModelMap = make(map[string]tea.Model)
+
+	// Rebuild with existing models
+	var leftHolder listModelHolder
+	var rightString stringer
+
+	if leftOk {
+		leftHolder = left.(listModelHolder)
+	} else {
+		leftHolder = listModelHolder{m: newListModel()}
+	}
+
+	if rightOk {
+		rightString = right.(stringer)
+	} else {
+		rightString = stringer("Hello World")
+	}
+
+	m.tui.LayoutTree = m.buildLayoutTree(leftHolder, rightString)
 }
 
 func (m model) View() string {
