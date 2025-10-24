@@ -258,7 +258,7 @@ func (m *multiColumnView) updateEnabledLists(enabledLists []string) {
 		if m.focusedIndex < m.startIndex {
 			m.startIndex = m.focusedIndex
 		}
-		if m.focusedIndex >= m.startIndex + maxVisible {
+		if m.focusedIndex >= m.startIndex+maxVisible {
 			m.startIndex = m.focusedIndex - maxVisible + 1
 		}
 	}
@@ -335,14 +335,14 @@ func (m multiColumnView) Update(msg tea.Msg) (multiColumnView, tea.Cmd) {
 				}
 
 				// Check if at visual right edge
-				atRightEdge := m.focusedIndex >= m.startIndex + maxVisible - 1
+				atRightEdge := m.focusedIndex >= m.startIndex+maxVisible-1
 
 				if !atRightEdge && m.focusedIndex < len(m.listComponents)-1 {
 					// Move focus right within visible area
 					m.listComponents[m.focusedIndex].Blur()
 					m.focusedIndex++
 					m.listComponents[m.focusedIndex].Focus()
-				} else if m.startIndex + maxVisible < len(m.listComponents) {
+				} else if m.startIndex+maxVisible < len(m.listComponents) {
 					// At visual right edge and can scroll right
 					m.listComponents[m.focusedIndex].Blur()
 					m.startIndex++
@@ -472,7 +472,7 @@ func (m multiColumnView) View() string {
 	if m.startIndex < 0 {
 		m.startIndex = 0
 	}
-	if m.startIndex + maxVisible > numLists {
+	if m.startIndex+maxVisible > numLists {
 		m.startIndex = numLists - maxVisible
 	}
 	if m.startIndex < 0 {

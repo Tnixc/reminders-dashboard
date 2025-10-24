@@ -165,7 +165,6 @@ func newListModel() listModel {
 	remindersList.SetShowPagination(true)
 	remindersList.SetShowHelp(false) // Disable list's built-in help, we use commonHelp
 
-
 	return listModel{
 		list:         remindersList,
 		delegateKeys: delegateKeys,
@@ -243,7 +242,6 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 
-		
 	}
 
 	// This will also call our delegate's update function.
