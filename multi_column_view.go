@@ -435,9 +435,9 @@ func (m multiColumnView) View() string {
 	helpView := m.commonHelp.View(helpMaxWidth)
 
 	// Account for padding when calculating available space
-	// We have 1 line top padding for the whole view + 2 lines padding above columns
+	// We have 1 line top padding for the whole view + 1 line padding above columns
 	const topPadding = 1
-	const columnTopPadding = 2
+	const columnTopPadding = 1
 	helpHeight := lipgloss.Height(helpView)
 
 	// Available height for lists = total height - help height - top padding - column top padding
@@ -493,7 +493,7 @@ func (m multiColumnView) View() string {
 	for _, component := range m.listComponents[m.startIndex:endIndex] {
 		columnView := component.View()
 		// Add 1 line padding above each column
-		columnWithPadding := "\n\n" + columnView
+		columnWithPadding := "\n" + columnView
 		listViews = append(listViews, columnWithPadding)
 	}
 

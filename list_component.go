@@ -191,7 +191,6 @@ func (lc listComponent) View() string {
 
 	view = strings.Join(lines, "\n")
 
-	// Add left border only, with 1 line top and bottom padding (2 lines shorter)
 	// Use highlighted border color when focused
 	var borderColor lipgloss.TerminalColor
 	if lc.focused {
@@ -200,23 +199,16 @@ func (lc listComponent) View() string {
 		borderColor = lipgloss.Color("236") // Dark gray/black for unfocused
 	}
 
-	borderHeight := lc.height - 2 // 1 line padding top and bottom
+	// Create vertical bar: space + repeating │ + space
+	barHeight := strings.Count(view, "\n") + 1
+	bar := strings.Repeat("│\n", barHeight-1) + "│"
+	barStyled := lipgloss.NewStyle().Foreground(borderColor).Render(bar)
 
-	// Add border, vertical padding, and 1ch horizontal padding
-	borderStyle := lipgloss.NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderLeft(true).
-		BorderForeground(borderColor).
-		PaddingTop(1).
-		PaddingBottom(1).
-		PaddingLeft(1).
-		PaddingRight(1).
-		Height(borderHeight)
+	// Combine: space + bar + space + view
+	combined := lipgloss.JoinHorizontal(lipgloss.Top, " ", barStyled, " ", view)
 
-	bordered := borderStyle.Render(view)
-
-	// Ensure fixed width (50 list + 1 border + 2 padding = 53)
-	return lipgloss.NewStyle().Width(53).Render(bordered)
+	// Ensure fixed width
+	return lipgloss.NewStyle().Width(53).Render(combined)
 }
 
 func (lc listComponent) SelectedItem() list.Item {

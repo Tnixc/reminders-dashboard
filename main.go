@@ -231,9 +231,9 @@ func (m rootModel) renderTabs(filterText string, isFiltering bool, filterInput s
 	// Always show filter (prevents newline when toggling filter)
 	if isFiltering {
 		// Show filter input box with cursor
-		cursor := "_"
+		cursor := "│"
 		filterBox := lipgloss.NewStyle().
-			Foreground(theme.BrightCyan()).
+			Foreground(theme.BrightRed()).
 			Render(" / " + filterInput + cursor)
 		tabsRow = tabsRow + filterBox
 	} else if filterText != "" {
