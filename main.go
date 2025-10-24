@@ -334,8 +334,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var ok bool
 				if m.activeTab == 0 {
 					// Single list view
-					if cursor := m.single.list.Cursor(); cursor < len(m.single.list.Items()) {
-						selectedItem, ok = m.single.list.Items()[cursor].(item)
+					if selected := m.single.list.SelectedItem(); selected != nil {
+						selectedItem, ok = selected.(item)
 					}
 				} else {
 					// Multi-column view

@@ -212,18 +212,7 @@ func (lc listComponent) View() string {
 }
 
 func (lc listComponent) SelectedItem() list.Item {
-	cursor := lc.list.Cursor()
-	itemsLen := len(lc.list.Items())
-	if itemsLen == 0 {
-		return nil
-	}
-	if cursor >= itemsLen {
-		cursor = itemsLen - 1
-	}
-	if cursor >= 0 {
-		return lc.list.Items()[cursor]
-	}
-	return nil
+	return lc.list.SelectedItem()
 }
 
 func (lc listComponent) FilterState() list.FilterState {
