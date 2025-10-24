@@ -31,6 +31,8 @@ type item struct {
 	urgencyText  string
 	urgencyColor string
 	parsedDate   time.Time
+	externalID   string
+	completed    bool
 }
 
 func (i item) Title() string {

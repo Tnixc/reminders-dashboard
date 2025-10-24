@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"go.dalton.dog/bubbleup"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -24,8 +27,21 @@ type rootModel struct {
 	settingsOpen bool
 	picker       listPicker
 
+	// edit overlay
+	editOpen     bool
+	editFocus    int // 0=list, 1=title, 2=notes, 3=complete, 4=delete
+	editList     textinput.Model
+	editTitle    textinput.Model
+	editNotes    textinput.Model
+	editComplete bool
+	editDelete   bool
+	editItem     *item
+
 	// shared filter state
 	sharedFilter string
+
+	// alerts
+	alert bubbleup.AlertModel
 }
 
 func initialModel() rootModel {
@@ -42,17 +58,48 @@ func initialModel() rootModel {
 	multi := newMultiColumnView(enabled)
 	multi.loadItems()
 
+	// Edit inputs
+	editList := textinput.New()
+	editList.Placeholder = "List name..."
+	editList.CharLimit = 50
+	editList.Width = 50
+	editList.CursorStyle = lipgloss.NewStyle().Foreground(theme.BrightCyan())
+
+	editTitle := textinput.New()
+	editTitle.Placeholder = "Reminder title..."
+	editTitle.CharLimit = 200
+	editTitle.Width = 50
+	editTitle.CursorStyle = lipgloss.NewStyle().Foreground(theme.BrightCyan())
+
+	editNotes := textinput.New()
+	editNotes.Placeholder = "Notes (optional)..."
+	editNotes.CharLimit = 500
+	editNotes.Width = 50
+	editNotes.CursorStyle = lipgloss.NewStyle().Foreground(theme.BrightCyan())
+
+	// Alerts
+	alert := *bubbleup.NewAlertModel(80, true)
+
 	return rootModel{
 		tabs:         []string{"List", "Columns"},
 		activeTab:    0,
 		single:       single,
 		multi:        multi,
 		picker:       picker,
+		editOpen:     false,
+		editFocus:    1, // start with title
+		editList:     editList,
+		editTitle:    editTitle,
+		editNotes:    editNotes,
+		editComplete: false,
+		editDelete:   false,
+		editItem:     nil,
 		sharedFilter: "",
+		alert:        alert,
 	}
 }
 
-func (m rootModel) Init() tea.Cmd { return nil }
+func (m rootModel) Init() tea.Cmd { return m.alert.Init() }
 
 func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
@@ -84,6 +131,124 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.picker.width, m.picker.height = t.Width, t.Height
 
 	case tea.KeyMsg:
+		if m.editOpen {
+			switch t.String() {
+			case "enter":
+				// Save the edit
+				newList := strings.TrimSpace(m.editList.Value())
+				newTitle := strings.TrimSpace(m.editTitle.Value())
+				newNotes := strings.TrimSpace(m.editNotes.Value())
+				if newTitle != "" && m.editItem != nil {
+					// Run reminders edit command
+					args := []string{"edit", newList, m.editItem.externalID}
+					if newNotes != "" {
+						args = append(args, "--notes", newNotes)
+					}
+					args = append(args, newTitle)
+					cmd := exec.Command("reminders", args...)
+					err := cmd.Run()
+					if err == nil {
+						alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Reminder updated successfully")
+						cmds = append(cmds, alertCmd)
+
+						// Handle complete toggle
+						if m.editComplete != m.editItem.completed {
+							var completeCmd *exec.Cmd
+							if m.editComplete {
+								completeCmd = exec.Command("reminders", "complete", newList, m.editItem.externalID)
+							} else {
+								completeCmd = exec.Command("reminders", "uncomplete", newList, m.editItem.externalID)
+							}
+							if completeCmd.Run() == nil {
+								alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Completion status updated")
+								cmds = append(cmds, alertCmd)
+							}
+						}
+						// Handle delete toggle
+						if m.editDelete {
+							deleteCmd := exec.Command("reminders", "delete", newList, m.editItem.externalID)
+							if deleteCmd.Run() == nil {
+								alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Reminder deleted")
+								cmds = append(cmds, alertCmd)
+							}
+						}
+						// Refresh the data
+						m.single.reloadWithFilter(nil)
+						m.multi.loadItems()
+					} else {
+						alertCmd := m.alert.NewAlertCmd(bubbleup.InfoKey, "Failed to update reminder")
+						cmds = append(cmds, alertCmd)
+					}
+				}
+				m.editOpen = false
+				m.editItem = nil
+				return m, nil
+			case "esc":
+				// Cancel edit
+				m.editOpen = false
+				m.editItem = nil
+				return m, nil
+			case "tab":
+				// Cycle focus forward
+				m.editFocus = (m.editFocus + 1) % 5
+				m.editList.Blur()
+				m.editTitle.Blur()
+				m.editNotes.Blur()
+				switch m.editFocus {
+				case 0:
+					m.editList.Focus()
+				case 1:
+					m.editTitle.Focus()
+				case 2:
+					m.editNotes.Focus()
+				case 3, 4:
+					// checkboxes, no focus
+				}
+				return m, nil
+			case "shift+tab":
+				// Cycle focus backward
+				m.editFocus = (m.editFocus + 4) % 5 // +4 is -1 mod 5
+				m.editList.Blur()
+				m.editTitle.Blur()
+				m.editNotes.Blur()
+				switch m.editFocus {
+				case 0:
+					m.editList.Focus()
+				case 1:
+					m.editTitle.Focus()
+				case 2:
+					m.editNotes.Focus()
+				case 3, 4:
+					// checkboxes, no focus
+				}
+				return m, nil
+			default:
+				// Handle input for focused field
+				var cmd tea.Cmd
+				if m.editFocus < 3 {
+					switch m.editFocus {
+					case 0:
+						m.editList, cmd = m.editList.Update(msg)
+					case 1:
+						m.editTitle, cmd = m.editTitle.Update(msg)
+					case 2:
+						m.editNotes, cmd = m.editNotes.Update(msg)
+					}
+				} else {
+					// checkboxes: only handle space to toggle
+					if t.String() == " " {
+						if m.editFocus == 3 {
+							m.editComplete = !m.editComplete
+						} else if m.editFocus == 4 {
+							m.editDelete = !m.editDelete
+						}
+					}
+					cmd = nil
+				}
+				return m, cmd
+			}
+		}
+
 		if m.settingsOpen {
 			// Esc closes settings
 			if t.String() == "esc" || t.String() == "q" {
@@ -159,6 +324,41 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			return m, tea.Batch(cmds...)
+		case "enter":
+			if isFiltering {
+				break // Let child handle it
+			}
+			if !m.settingsOpen {
+				// Open edit overlay for selected reminder
+				var selectedItem item
+				var ok bool
+				if m.activeTab == 0 {
+					// Single list view
+					if cursor := m.single.list.Cursor(); cursor < len(m.single.list.Items()) {
+						selectedItem, ok = m.single.list.Items()[cursor].(item)
+					}
+				} else {
+					// Multi-column view
+					if selected := m.multi.listComponents[m.multi.focusedIndex].SelectedItem(); selected != nil {
+						selectedItem, ok = selected.(item)
+					}
+				}
+				if ok {
+					m.editOpen = true
+					m.editFocus = 1 // start with title
+					m.editList.SetValue(selectedItem.listName)
+					m.editTitle.SetValue(selectedItem.title)
+					m.editNotes.SetValue("") // notes not stored in item, could add if needed
+					m.editComplete = selectedItem.completed
+					m.editDelete = false // default to not delete
+					m.editItem = &selectedItem
+					m.editList.Blur()
+					m.editTitle.Focus()
+					m.editNotes.Blur()
+					return m, nil
+				}
+			}
+
 		case "shift+tab":
 			if isFiltering {
 				break // Let child handle it
@@ -199,6 +399,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.picker = v.(listPicker)
 		cmds = append(cmds, cmd)
 	}
+
+	// Update alerts
+	alertOut, alertCmd := m.alert.Update(msg)
+	m.alert = alertOut.(bubbleup.AlertModel)
+	cmds = append(cmds, alertCmd)
 
 	return m, tea.Batch(cmds...)
 }
@@ -315,9 +520,58 @@ func (m rootModel) View() string {
 		body = m.multi.View()
 	}
 
-	if !m.settingsOpen {
+	if !m.settingsOpen && !m.editOpen {
 		// Use lipgloss.Height() to properly calculate - no manual arithmetic
-		return lipgloss.JoinVertical(lipgloss.Left, body, footerWithPadding)
+		content := lipgloss.JoinVertical(lipgloss.Left, body, footerWithPadding)
+		return m.alert.Render(content)
+	}
+
+	if m.editOpen {
+		// Edit modal
+		labelStyle := lipgloss.NewStyle().Foreground(theme.BrightCyan())
+		keyStyle := lipgloss.NewStyle().Foreground(theme.BrightBlack())
+		descStyle := lipgloss.NewStyle().Foreground(theme.Fg())
+
+		completeCheck := "[ ]"
+		if m.editComplete {
+			completeCheck = "[x]"
+		}
+		deleteCheck := "[ ]"
+		if m.editDelete {
+			deleteCheck = "[x]"
+		}
+
+		// Add cursor for focused checkboxes
+		completeLine := labelStyle.Render("Complete: ") + completeCheck
+		deleteLine := labelStyle.Render("Delete: ") + deleteCheck
+		if m.editFocus == 3 {
+			completeLine = "> " + completeLine
+		} else if m.editFocus == 4 {
+			deleteLine = "> " + deleteLine
+		}
+
+		editContent := labelStyle.Render("List: ") + m.editList.View() + "\n\n" +
+			labelStyle.Render("Title: ") + m.editTitle.View() + "\n\n" +
+			labelStyle.Render("Notes: ") + m.editNotes.View() + "\n\n" +
+			completeLine + "\n\n" +
+			deleteLine + "\n\n" +
+			keyStyle.Render("Tab") + descStyle.Render(" / ") + keyStyle.Render("Shift+Tab") + descStyle.Render(" to navigate, ") +
+			keyStyle.Render("Space") + descStyle.Render(" to toggle, ") +
+			keyStyle.Render("Enter") + descStyle.Render(" to save, ") +
+			keyStyle.Render("Esc") + descStyle.Render(" to cancel")
+		modal := lipgloss.NewStyle().
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(theme.BrightCyan()).
+			Padding(1, 2).
+			Render(editContent)
+
+		// Simple centered modal substitute
+		_ = lipgloss.Width(modal)
+		fullView := lipgloss.JoinVertical(lipgloss.Left, body, footerWithPadding)
+		boxed := lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, modal)
+		dimmed := lipgloss.NewStyle().Foreground(theme.BrightBlack()).Render(fullView)
+		content := dimmed + "\n" + boxed
+		return m.alert.Render(content)
 	}
 
 	// Settings modal (use existing picker styled by theme)
@@ -332,7 +586,8 @@ func (m rootModel) View() string {
 	fullView := lipgloss.JoinVertical(lipgloss.Left, body, footerWithPadding)
 	boxed := lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, modal)
 	dimmed := lipgloss.NewStyle().Foreground(theme.BrightBlack()).Render(fullView)
-	return dimmed + "\n" + boxed
+	content := dimmed + "\n" + boxed
+	return m.alert.Render(content)
 }
 
 func main() {
