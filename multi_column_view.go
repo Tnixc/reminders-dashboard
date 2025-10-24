@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -69,8 +70,9 @@ type multiColumnView struct {
 	width  int
 	height int
 
-	// Focus
+	// Focus and scrolling
 	focusedIndex int // Which list column is focused (-1 means none)
+	startIndex   int // Starting index for visible columns
 }
 
 func newMultiColumnView(enabledLists []string) multiColumnView {
@@ -104,6 +106,7 @@ func newMultiColumnView(enabledLists []string) multiColumnView {
 		filterValue:    "",
 		commonHelp:     newCommonHelp(),
 		focusedIndex:   0, // Focus first list by default
+		startIndex:     0,
 	}
 
 	return m
@@ -228,12 +231,36 @@ func (m *multiColumnView) updateEnabledLists(enabledLists []string) {
 	}
 	m.listComponents = listComponents
 
-	// Adjust focus if needed
-	if m.focusedIndex >= len(m.listComponents) {
-		m.focusedIndex = len(m.listComponents) - 1
-	}
-	if m.focusedIndex < 0 && len(m.listComponents) > 0 {
-		m.focusedIndex = 0
+	// Adjust focus and startIndex if needed
+	if len(m.listComponents) == 0 {
+		m.focusedIndex = -1
+		m.startIndex = 0
+	} else {
+		if m.focusedIndex >= len(m.listComponents) {
+			m.focusedIndex = len(m.listComponents) - 1
+		}
+		if m.focusedIndex < 0 {
+			m.focusedIndex = 0
+		}
+		// Reset startIndex if necessary
+		if m.startIndex >= len(m.listComponents) {
+			m.startIndex = 0
+		}
+		// Ensure focused is in valid range
+		columnTotalWidth := 53
+		maxVisible := m.width / columnTotalWidth
+		if maxVisible < 1 {
+			maxVisible = 1
+		}
+		if maxVisible > len(m.listComponents) {
+			maxVisible = len(m.listComponents)
+		}
+		if m.focusedIndex < m.startIndex {
+			m.startIndex = m.focusedIndex
+		}
+		if m.focusedIndex >= m.startIndex + maxVisible {
+			m.startIndex = m.focusedIndex - maxVisible + 1
+		}
 	}
 
 	// Regroup items and update list components
@@ -297,23 +324,62 @@ func (m multiColumnView) Update(msg tea.Msg) (multiColumnView, tea.Cmd) {
 		switch msg.String() {
 		case "right", "l":
 			if len(m.listComponents) > 0 {
-				if m.focusedIndex >= 0 && m.focusedIndex < len(m.listComponents) {
-					m.listComponents[m.focusedIndex].Blur()
+				// Calculate max visible
+				columnTotalWidth := 53 // fixed
+				maxVisible := m.width / columnTotalWidth
+				if maxVisible < 1 {
+					maxVisible = 1
 				}
-				m.focusedIndex = (m.focusedIndex + 1) % len(m.listComponents)
-				m.listComponents[m.focusedIndex].Focus()
+				if maxVisible > len(m.listComponents) {
+					maxVisible = len(m.listComponents)
+				}
+
+				// Check if at visual right edge
+				atRightEdge := m.focusedIndex >= m.startIndex + maxVisible - 1
+
+				if !atRightEdge && m.focusedIndex < len(m.listComponents)-1 {
+					// Move focus right within visible area
+					m.listComponents[m.focusedIndex].Blur()
+					m.focusedIndex++
+					m.listComponents[m.focusedIndex].Focus()
+				} else if m.startIndex + maxVisible < len(m.listComponents) {
+					// At visual right edge and can scroll right
+					m.listComponents[m.focusedIndex].Blur()
+					m.startIndex++
+					m.focusedIndex = m.startIndex + maxVisible - 1
+					m.listComponents[m.focusedIndex].Focus()
+				}
+				// Else, stay at edge
 			}
 			return m, nil
 		case "left", "h":
 			if len(m.listComponents) > 0 {
-				if m.focusedIndex >= 0 && m.focusedIndex < len(m.listComponents) {
+				// Calculate max visible
+				columnTotalWidth := 53 // fixed
+				maxVisible := m.width / columnTotalWidth
+				if maxVisible < 1 {
+					maxVisible = 1
+				}
+				if maxVisible > len(m.listComponents) {
+					maxVisible = len(m.listComponents)
+				}
+
+				// Check if at visual left edge
+				atLeftEdge := m.focusedIndex <= m.startIndex
+
+				if !atLeftEdge && m.focusedIndex > 0 {
+					// Move focus left within visible area
 					m.listComponents[m.focusedIndex].Blur()
+					m.focusedIndex--
+					m.listComponents[m.focusedIndex].Focus()
+				} else if m.startIndex > 0 {
+					// At visual left edge and can scroll left
+					m.listComponents[m.focusedIndex].Blur()
+					m.startIndex--
+					m.focusedIndex = m.startIndex
+					m.listComponents[m.focusedIndex].Focus()
 				}
-				m.focusedIndex--
-				if m.focusedIndex < 0 {
-					m.focusedIndex = len(m.listComponents) - 1
-				}
-				m.listComponents[m.focusedIndex].Focus()
+				// Else, stay at edge
 			}
 			return m, nil
 		}
@@ -386,28 +452,86 @@ func (m multiColumnView) View() string {
 		return ""
 	}
 
-	// Always render columns in column view - each column shows its own "No items" if empty
 	// Fixed width for each column
-	const fixedColumnWidth = 45
+	const fixedColumnWidth = 50
 	listWidth := fixedColumnWidth
 
+	// Calculate column total width (including padding and border)
+	columnTotalWidth := listWidth + 3 // 50 + 1 border + 2 padding
+
+	// Calculate max visible columns
+	maxVisible := m.width / columnTotalWidth
+	if maxVisible < 1 {
+		maxVisible = 1
+	}
+	if maxVisible > numLists {
+		maxVisible = numLists
+	}
+
+	// Ensure startIndex is valid
+	if m.startIndex < 0 {
+		m.startIndex = 0
+	}
+	if m.startIndex + maxVisible > numLists {
+		m.startIndex = numLists - maxVisible
+	}
+	if m.startIndex < 0 {
+		m.startIndex = 0
+	}
+
+	// Set size for all list components
 	for i := range m.listComponents {
 		m.listComponents[i].SetSize(listWidth, listHeight)
 	}
 
-	// Render all list components horizontally with 1 line padding above
+	// Render only visible list components
+	endIndex := m.startIndex + maxVisible
+	if endIndex > numLists {
+		endIndex = numLists
+	}
 	var listViews []string
-	for _, component := range m.listComponents {
+	for _, component := range m.listComponents[m.startIndex:endIndex] {
 		columnView := component.View()
 		// Add 1 line padding above each column
-		columnWithPadding := "\n" + columnView
+		columnWithPadding := "\n\n" + columnView
 		listViews = append(listViews, columnWithPadding)
 	}
 
 	listsView := lipgloss.JoinHorizontal(lipgloss.Top, listViews...)
 
+	// Add vertical scroll indicator bars in subtle color
+	barStyle := lipgloss.NewStyle().Foreground(theme.BrightBlack())
+	barHeight := 3 // Fixed height for indicators
+	leftBar := strings.Repeat("\n", barHeight-1) + ""
+	rightBar := strings.Repeat("\n", barHeight-1) + ""
+
+	// Left bar for scrolling left
+	if m.startIndex > 0 {
+		listsView = lipgloss.JoinHorizontal(lipgloss.Center, barStyle.Render(leftBar), "  ", listsView)
+	}
+
+	// Right bar for scrolling right
+	if endIndex < numLists {
+		listsView = lipgloss.JoinHorizontal(lipgloss.Center, listsView, "  ", barStyle.Render(rightBar))
+	}
+
+	// Create scroll indicator in subtle color
+	var scrollIndicator string
+	if numLists > 0 {
+		leftArrow := ""
+		if m.startIndex > 0 {
+			leftArrow = "◀ "
+		}
+		rightArrow := ""
+		if endIndex < numLists {
+			rightArrow = " ▶"
+		}
+		scrollText := leftArrow + fmt.Sprintf("Lists %d-%d of %d", m.startIndex+1, endIndex, numLists) + rightArrow
+		scrollIndicator = barStyle.Render(scrollText)
+	}
+
 	// Join vertically - lipgloss handles the layout
-	content := lipgloss.JoinVertical(lipgloss.Left, listsView, helpView)
+	content := lipgloss.JoinVertical(lipgloss.Left, "\n", listsView, scrollIndicator, helpView)
 
 	// Add 2ch left padding and 1 line top padding only
 	paddingStyle := lipgloss.NewStyle().PaddingLeft(2).PaddingTop(1)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,10 +21,6 @@ var (
 			Foreground(theme.Bg()).
 			Background(theme.Blue()).
 			Padding(0, 1)
-
-	statusMessageStyle = lipgloss.NewStyle().
-				Foreground(theme.BrightGreen()).
-				Render
 )
 
 type item struct {
@@ -73,52 +68,18 @@ func urgencyColorToTheme(colorName string) lipgloss.TerminalColor {
 	}
 }
 
-type listKeyMap struct {
-	toggleSpinner    key.Binding
-	toggleTitleBar   key.Binding
-	toggleStatusBar  key.Binding
-	togglePagination key.Binding
-	toggleHelpMenu   key.Binding
-	insertItem       key.Binding
-}
+type listKeyMap struct{}
 
 func newListKeyMap() *listKeyMap {
-	return &listKeyMap{
-		insertItem: key.NewBinding(
-			key.WithKeys("a"),
-			key.WithHelp("a", "add item"),
-		),
-		toggleSpinner: key.NewBinding(
-			key.WithKeys("s"),
-			key.WithHelp("s", "toggle spinner"),
-		),
-		toggleTitleBar: key.NewBinding(
-			key.WithKeys("T"),
-			key.WithHelp("T", "toggle title"),
-		),
-		toggleStatusBar: key.NewBinding(
-			key.WithKeys("S"),
-			key.WithHelp("S", "toggle status"),
-		),
-		togglePagination: key.NewBinding(
-			key.WithKeys("P"),
-			key.WithHelp("P", "toggle pagination"),
-		),
-		toggleHelpMenu: key.NewBinding(
-			key.WithKeys("H"),
-			key.WithHelp("H", "toggle help"),
-		),
-	}
+	return &listKeyMap{}
 }
 
 type listModel struct {
-	list          list.Model
-	itemGenerator *randomItemGenerator
-	keys          *listKeyMap
-	delegateKeys  *delegateKeyMap
-	commonHelp    commonHelp
-	width         int
-	height        int
+	list         list.Model
+	delegateKeys *delegateKeyMap
+	commonHelp   commonHelp
+	width        int
+	height       int
 
 	// Custom filtering
 	allItems    []list.Item
@@ -129,9 +90,7 @@ type listModel struct {
 
 func newListModel() listModel {
 	var (
-		itemGenerator randomItemGenerator
-		delegateKeys  = newDelegateKeyMap()
-		listKeys      = newListKeyMap()
+		delegateKeys = newDelegateKeyMap()
 	)
 
 	// Load reminders from command
@@ -205,27 +164,16 @@ func newListModel() listModel {
 
 	remindersList.SetShowPagination(true)
 	remindersList.SetShowHelp(false) // Disable list's built-in help, we use commonHelp
-	remindersList.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			listKeys.toggleSpinner,
-			listKeys.insertItem,
-			listKeys.toggleTitleBar,
-			listKeys.toggleStatusBar,
-			listKeys.togglePagination,
-			listKeys.toggleHelpMenu,
-		}
-	}
+
 
 	return listModel{
-		list:          remindersList,
-		keys:          listKeys,
-		delegateKeys:  delegateKeys,
-		itemGenerator: &itemGenerator,
-		commonHelp:    newCommonHelp(),
-		allItems:      items,
-		filterInput:   ti,
-		filtering:     false,
-		filterValue:   "",
+		list:         remindersList,
+		delegateKeys: delegateKeys,
+		commonHelp:   newCommonHelp(),
+		allItems:     items,
+		filterInput:  ti,
+		filtering:    false,
+		filterValue:  "",
 	}
 }
 
@@ -295,36 +243,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 
-		switch {
-		case key.Matches(msg, m.keys.toggleSpinner):
-			cmd := m.list.ToggleSpinner()
-			return m, cmd
-
-		case key.Matches(msg, m.keys.toggleTitleBar):
-			v := !m.list.ShowTitle()
-			m.list.SetShowTitle(v)
-			m.list.SetShowFilter(v)
-			m.list.SetFilteringEnabled(v)
-			return m, nil
-
-		case key.Matches(msg, m.keys.toggleStatusBar):
-			m.list.SetShowStatusBar(!m.list.ShowStatusBar())
-			return m, nil
-
-		case key.Matches(msg, m.keys.togglePagination):
-			m.list.SetShowPagination(!m.list.ShowPagination())
-			return m, nil
-
-		case key.Matches(msg, m.keys.toggleHelpMenu):
-			m.list.SetShowHelp(!m.list.ShowHelp())
-			return m, nil
-
-		case key.Matches(msg, m.keys.insertItem):
-			newItem := m.itemGenerator.next()
-			insCmd := m.list.InsertItem(0, newItem)
-			statusCmd := m.list.NewStatusMessage(statusMessageStyle("Added " + newItem.Title()))
-			return m, tea.Batch(insCmd, statusCmd)
-		}
+		
 	}
 
 	// This will also call our delegate's update function.

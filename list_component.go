@@ -83,7 +83,21 @@ func (lc *listComponent) SetTitleColor(color lipgloss.TerminalColor) {
 }
 
 func (lc *listComponent) SetItems(items []list.Item) tea.Cmd {
-	return lc.list.SetItems(items)
+	// For column view, remove the redundant list name from descriptions
+	modifiedItems := make([]list.Item, len(items))
+	for i, it := range items {
+		if item, ok := it.(item); ok {
+			// Remove " • listName" from description if present
+			suffix := " • " + lc.listName
+			if strings.HasSuffix(item.description, suffix) {
+				item.description = strings.TrimSuffix(item.description, suffix)
+			}
+			modifiedItems[i] = item
+		} else {
+			modifiedItems[i] = it
+		}
+	}
+	return lc.list.SetItems(modifiedItems)
 }
 
 func (lc *listComponent) Focus() {
@@ -156,13 +170,13 @@ func (lc listComponent) View() string {
 	}
 	lines := strings.Split(view, "\n")
 
-	// Add focus indicator after title (first line)
+	// Add focus indicator icon on the left if focused
 	if lc.focused && len(lines) > 0 {
-		// Style indicator to match title color
-		indicator := lipgloss.NewStyle().
+		// Indicator for current list
+		focusIcon := lipgloss.NewStyle().
 			Foreground(theme.BrightCyan()).
-			Render(" 󰛁")
-		lines[0] = lines[0] + indicator
+			Render("󰻿 ")
+		lines[0] = focusIcon + lines[0]
 	}
 
 	// If not focused, dim the entire list but keep title readable
@@ -199,7 +213,10 @@ func (lc listComponent) View() string {
 		PaddingRight(1).
 		Height(borderHeight)
 
-	return borderStyle.Render(view)
+	bordered := borderStyle.Render(view)
+
+	// Ensure fixed width (50 list + 1 border + 2 padding = 53)
+	return lipgloss.NewStyle().Width(53).Render(bordered)
 }
 
 func (lc listComponent) SelectedItem() list.Item {
