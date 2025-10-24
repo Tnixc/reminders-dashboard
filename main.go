@@ -60,14 +60,18 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = t.Width, t.Height
 
-		// Calculate available height for content (tabs at bottom, single line)
-		tabHeight := 1                              // simple text tabs are 1 line tall
-		availableHeight := m.height - tabHeight - 1 // -1 for newline between content and tabs
+		// Reserve space for footer (tabs/filter) + bottom padding
+		// Footer is typically 1 line for tabs + 1 line for bottom padding
+		const footerReservedHeight = 2
 
 		// Create adjusted size message for children
-		adjustedMsg := tea.WindowSizeMsg{Width: t.Width, Height: availableHeight}
+		adjustedHeight := t.Height - footerReservedHeight
+		if adjustedHeight < 0 {
+			adjustedHeight = 0
+		}
+		adjustedMsg := tea.WindowSizeMsg{Width: t.Width, Height: adjustedHeight}
 
-		// forward to children with adjusted height
+		// Forward adjusted size to children
 		var cmd tea.Cmd
 		v, c := m.single.Update(adjustedMsg)
 		m.single = v.(listModel)
@@ -250,7 +254,8 @@ func (m rootModel) renderTabs(filterText string, isFiltering bool, filterInput s
 		tabsRow = tabsRow + filterPlaceholder
 	}
 
-	return tabsRow
+	// Add 2ch left padding to align with help text
+	return lipgloss.NewStyle().PaddingLeft(2).Render(tabsRow)
 }
 
 func (m rootModel) View() string {
@@ -275,6 +280,12 @@ func (m rootModel) View() string {
 		}
 	}
 
+	// Render tabs at the bottom with filter
+	footer := m.renderTabs(filterText, isFiltering, filterInput)
+
+	// Add bottom padding under the footer
+	footerWithPadding := footer + "\n"
+
 	// Background view from active tab
 	var body string
 	if m.activeTab == 0 {
@@ -283,18 +294,9 @@ func (m rootModel) View() string {
 		body = m.multi.View()
 	}
 
-	// Render tabs at the bottom with filter
-	footer := m.renderTabs(filterText, isFiltering, filterInput)
-
-	// Calculate available height for content (tabs at bottom, single line)
-	footerHeight := lipgloss.Height(footer)
-	availableHeight := m.height - footerHeight - 1 // -1 for newline
-
-	// Place content to fill available width and height
-	content := lipgloss.Place(m.width, availableHeight, lipgloss.Left, lipgloss.Top, body)
-
 	if !m.settingsOpen {
-		return content + "\n" + footer
+		// Use lipgloss.Height() to properly calculate - no manual arithmetic
+		return lipgloss.JoinVertical(lipgloss.Left, body, footerWithPadding)
 	}
 
 	// Settings modal (use existing picker styled by theme)
@@ -306,8 +308,9 @@ func (m rootModel) View() string {
 
 	// Simple centered modal substitute
 	_ = lipgloss.Width(modal)
+	fullView := lipgloss.JoinVertical(lipgloss.Left, body, footerWithPadding)
 	boxed := lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, modal)
-	dimmed := lipgloss.NewStyle().Foreground(theme.BrightBlack()).Render(content + "\n" + footer)
+	dimmed := lipgloss.NewStyle().Foreground(theme.BrightBlack()).Render(fullView)
 	return dimmed + "\n" + boxed
 }
 

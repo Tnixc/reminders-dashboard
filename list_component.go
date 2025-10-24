@@ -68,8 +68,8 @@ func newListComponent(listName string, items []list.Item) listComponent {
 func (lc *listComponent) SetSize(width, height int) {
 	lc.width = width
 	lc.height = height
-	// Subtract 2 for left and right borders
-	lc.list.SetSize(width-2, height)
+	// No need to subtract for borders since we only have left border
+	lc.list.SetSize(width, height)
 
 	// Update cursor visibility based on focus
 	lc.updateCursorStyle()
@@ -88,7 +88,8 @@ func (lc *listComponent) SetItems(items []list.Item) tea.Cmd {
 
 func (lc *listComponent) Focus() {
 	lc.focused = true
-	lc.list.Title = "› " + lc.listName
+	// Title indicator will be added in View() outside the badge
+	lc.list.Title = lc.listName
 	lc.updateCursorStyle()
 }
 
@@ -147,20 +148,26 @@ func (lc listComponent) Update(msg tea.Msg) (listComponent, tea.Cmd) {
 
 func (lc listComponent) View() string {
 	view := lc.list.View()
+	lines := strings.Split(view, "\n")
+
+	// Add focus indicator after title (first line)
+	if lc.focused && len(lines) > 0 {
+		lines[0] = lines[0] + " 󰛁"
+	}
 
 	// If not focused, dim the entire list but keep title readable
 	if !lc.focused {
-		lines := strings.Split(view, "\n")
 		for i := range lines {
 			if i == 0 { // keep title as-is
 				continue
 			}
 			lines[i] = lipgloss.NewStyle().Foreground(theme.BrightBlack()).Render(lines[i])
 		}
-		view = strings.Join(lines, "\n")
 	}
 
-	// Add left and right borders with fixed height
+	view = strings.Join(lines, "\n")
+
+	// Add left border only, with 1 line top and bottom padding (2 lines shorter)
 	// Use highlighted border color when focused
 	var borderColor lipgloss.TerminalColor
 	if lc.focused {
@@ -169,13 +176,18 @@ func (lc listComponent) View() string {
 		borderColor = lipgloss.Color("236") // Dark gray/black for unfocused
 	}
 
+	borderHeight := lc.height - 2 // 1 line padding top and bottom
+
+	// Add border, vertical padding, and 1ch horizontal padding
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderLeft(true).
-		BorderRight(true).
 		BorderForeground(borderColor).
-		Width(lc.width - 2).
-		Height(lc.height)
+		PaddingTop(1).
+		PaddingBottom(1).
+		PaddingLeft(1).
+		PaddingRight(1).
+		Height(borderHeight)
 
 	return borderStyle.Render(view)
 }

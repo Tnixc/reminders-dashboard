@@ -345,18 +345,20 @@ func (m multiColumnView) View() string {
 		return ""
 	}
 
-	// No top view - filter is shown at bottom next to tabs
-
-	// Render help with safe width to avoid overflow
+	// Render help first to get its actual height
 	helpMaxWidth := m.width
 	if helpMaxWidth > 120 {
 		helpMaxWidth = 120
 	}
 	helpView := m.commonHelp.View(helpMaxWidth)
 
-	// Compute list height using boxer-provided space (no manual padding)
+	// Account for padding when calculating available space
+	// We have 1 line top padding
+	const topPadding = 1
 	helpHeight := lipgloss.Height(helpView)
-	listHeight := m.height - helpHeight
+
+	// Available height for lists = total height - help height - top padding
+	listHeight := m.height - helpHeight - topPadding
 	if listHeight < 0 {
 		listHeight = 0
 	}
@@ -367,28 +369,44 @@ func (m multiColumnView) View() string {
 		return ""
 	}
 
-	// Fixed width for each column (instead of dividing screen width)
-	const fixedColumnWidth = 45
-	listWidth := fixedColumnWidth
-
-	for i := range m.listComponents {
-		m.listComponents[i].SetSize(listWidth, listHeight)
+	// Check if all lists are empty
+	allEmpty := true
+	for _, items := range m.groupedItems {
+		if len(items) > 0 {
+			allEmpty = false
+			break
+		}
 	}
 
-	// Render all list components horizontally (no dividers - borders provide separation)
-	var listViews []string
-	for _, component := range m.listComponents {
-		listViews = append(listViews, component.View())
+	var listsView string
+	if allEmpty {
+		// Show single "No items." message
+		noItemsMsg := lipgloss.NewStyle().
+			Foreground(theme.BrightBlack()).
+			Render("No items.")
+		listsView = noItemsMsg
+	} else {
+		// Fixed width for each column
+		const fixedColumnWidth = 45
+		listWidth := fixedColumnWidth
+
+		for i := range m.listComponents {
+			m.listComponents[i].SetSize(listWidth, listHeight)
+		}
+
+		// Render all list components horizontally
+		var listViews []string
+		for _, component := range m.listComponents {
+			listViews = append(listViews, component.View())
+		}
+
+		listsView = lipgloss.JoinHorizontal(lipgloss.Top, listViews...)
 	}
 
-	listsView := lipgloss.JoinHorizontal(lipgloss.Top, listViews...)
+	// Join vertically - lipgloss handles the layout
+	content := lipgloss.JoinVertical(lipgloss.Left, listsView, helpView)
 
-	// Build the layout: lists, then help
-	parts := []string{listsView, helpView}
-
-	content := lipgloss.JoinVertical(lipgloss.Left, parts...)
-
-	// Add 2ch left padding and 1 line top padding
+	// Add 2ch left padding and 1 line top padding only
 	paddingStyle := lipgloss.NewStyle().PaddingLeft(2).PaddingTop(1)
 	return paddingStyle.Render(content)
 }

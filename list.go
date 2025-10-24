@@ -359,19 +359,20 @@ func (m *listModel) applyFilter(query string) {
 }
 
 func (m listModel) View() string {
-	// Render help with safe width to avoid overflow in boxer
-	helpMaxWidth := m.list.Width()
-	if helpMaxWidth == 0 || helpMaxWidth > m.width {
-		helpMaxWidth = m.width
-	}
+	// Render help first to get its actual height
+	helpMaxWidth := m.width
 	if helpMaxWidth > 120 {
 		helpMaxWidth = 120
 	}
 	helpView := m.commonHelp.View(helpMaxWidth)
+
+	// Account for padding when calculating available space
+	// We have 1 line top padding
+	const topPadding = 1
 	helpHeight := lipgloss.Height(helpView)
 
-	// Compute sizes from current boxer leaf (no manual padding math)
-	listHeight := m.height - helpHeight
+	// Available height for list = total height - help height - top padding
+	listHeight := m.height - helpHeight - topPadding
 	if listHeight < 0 {
 		listHeight = 0
 	}
@@ -379,9 +380,10 @@ func (m listModel) View() string {
 
 	listView := m.list.View()
 
+	// Join vertically - lipgloss handles the layout
 	content := lipgloss.JoinVertical(lipgloss.Left, listView, helpView)
 
-	// Add 2ch left padding and 1 line top padding
+	// Add 2ch left padding and 1 line top padding only
 	paddingStyle := lipgloss.NewStyle().PaddingLeft(2).PaddingTop(1)
 	return paddingStyle.Render(content)
 }
