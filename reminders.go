@@ -298,5 +298,6 @@ func reminderToItem(r Reminder) item {
 		color:        r.Color,
 		urgencyText:  urgencyText,
 		urgencyColor: urgencyColor,
+		parsedDate:   r.parsedDate,
 	}
 }

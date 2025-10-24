@@ -147,12 +147,22 @@ func (lc listComponent) Update(msg tea.Msg) (listComponent, tea.Cmd) {
 }
 
 func (lc listComponent) View() string {
-	view := lc.list.View()
+	var view string
+	if len(lc.list.Items()) == 0 {
+		// For empty lists, show only the title
+		view = lc.list.Styles.Title.Render(lc.list.Title) + "\n"
+	} else {
+		view = lc.list.View()
+	}
 	lines := strings.Split(view, "\n")
 
 	// Add focus indicator after title (first line)
 	if lc.focused && len(lines) > 0 {
-		lines[0] = lines[0] + " 󰛁"
+		// Style indicator to match title color
+		indicator := lipgloss.NewStyle().
+			Foreground(theme.BrightCyan()).
+			Render(" 󰛁")
+		lines[0] = lines[0] + indicator
 	}
 
 	// If not focused, dim the entire list but keep title readable

@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sahilm/fuzzy"
+	"sort"
 	"strings"
 )
 
@@ -193,6 +194,21 @@ func (m *multiColumnView) applyFilter(query string) {
 		}
 	}
 
+	// Sort filtered items by due date
+	sort.Slice(filteredItems, func(i, j int) bool {
+		// Items without due dates go to the end
+		if filteredItems[i].parsedDate.IsZero() && !filteredItems[j].parsedDate.IsZero() {
+			return false
+		}
+		if !filteredItems[i].parsedDate.IsZero() && filteredItems[j].parsedDate.IsZero() {
+			return true
+		}
+		if filteredItems[i].parsedDate.IsZero() && filteredItems[j].parsedDate.IsZero() {
+			return filteredItems[i].title < filteredItems[j].title
+		}
+		return filteredItems[i].parsedDate.Before(filteredItems[j].parsedDate)
+	})
+
 	// Regroup and update list components
 	m.groupItemsByList(filteredItems)
 	m.updateListComponents()
@@ -353,12 +369,13 @@ func (m multiColumnView) View() string {
 	helpView := m.commonHelp.View(helpMaxWidth)
 
 	// Account for padding when calculating available space
-	// We have 1 line top padding
+	// We have 1 line top padding for the whole view + 1 line padding above columns
 	const topPadding = 1
+	const columnTopPadding = 1
 	helpHeight := lipgloss.Height(helpView)
 
-	// Available height for lists = total height - help height - top padding
-	listHeight := m.height - helpHeight - topPadding
+	// Available height for lists = total height - help height - top padding - column top padding
+	listHeight := m.height - helpHeight - topPadding - columnTopPadding
 	if listHeight < 0 {
 		listHeight = 0
 	}
@@ -369,39 +386,25 @@ func (m multiColumnView) View() string {
 		return ""
 	}
 
-	// Check if all lists are empty
-	allEmpty := true
-	for _, items := range m.groupedItems {
-		if len(items) > 0 {
-			allEmpty = false
-			break
-		}
+	// Always render columns in column view - each column shows its own "No items" if empty
+	// Fixed width for each column
+	const fixedColumnWidth = 45
+	listWidth := fixedColumnWidth
+
+	for i := range m.listComponents {
+		m.listComponents[i].SetSize(listWidth, listHeight)
 	}
 
-	var listsView string
-	if allEmpty {
-		// Show single "No items." message
-		noItemsMsg := lipgloss.NewStyle().
-			Foreground(theme.BrightBlack()).
-			Render("No items.")
-		listsView = noItemsMsg
-	} else {
-		// Fixed width for each column
-		const fixedColumnWidth = 45
-		listWidth := fixedColumnWidth
-
-		for i := range m.listComponents {
-			m.listComponents[i].SetSize(listWidth, listHeight)
-		}
-
-		// Render all list components horizontally
-		var listViews []string
-		for _, component := range m.listComponents {
-			listViews = append(listViews, component.View())
-		}
-
-		listsView = lipgloss.JoinHorizontal(lipgloss.Top, listViews...)
+	// Render all list components horizontally with 1 line padding above
+	var listViews []string
+	for _, component := range m.listComponents {
+		columnView := component.View()
+		// Add 1 line padding above each column
+		columnWithPadding := "\n" + columnView
+		listViews = append(listViews, columnWithPadding)
 	}
+
+	listsView := lipgloss.JoinHorizontal(lipgloss.Top, listViews...)
 
 	// Join vertically - lipgloss handles the layout
 	content := lipgloss.JoinVertical(lipgloss.Left, listsView, helpView)

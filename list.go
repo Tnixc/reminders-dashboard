@@ -8,6 +8,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	tint "github.com/lrstanley/bubbletint"
 	"github.com/sahilm/fuzzy"
+	"sort"
+	"time"
 )
 
 var (
@@ -33,6 +35,7 @@ type item struct {
 	color        string
 	urgencyText  string
 	urgencyColor string
+	parsedDate   time.Time
 }
 
 func (i item) Title() string {
@@ -354,6 +357,26 @@ func (m *listModel) applyFilter(query string) {
 			filteredItems[i] = m.allItems[match.Index]
 		}
 	}
+
+	// Sort filtered items by due date
+	sort.Slice(filteredItems, func(i, j int) bool {
+		it1, ok1 := filteredItems[i].(item)
+		it2, ok2 := filteredItems[j].(item)
+		if !ok1 || !ok2 {
+			return false
+		}
+		// Items without due dates go to the end
+		if it1.parsedDate.IsZero() && !it2.parsedDate.IsZero() {
+			return false
+		}
+		if !it1.parsedDate.IsZero() && it2.parsedDate.IsZero() {
+			return true
+		}
+		if it1.parsedDate.IsZero() && it2.parsedDate.IsZero() {
+			return it1.title < it2.title
+		}
+		return it1.parsedDate.Before(it2.parsedDate)
+	})
 
 	m.list.SetItems(filteredItems)
 }
