@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"os"
 	"strings"
+	"time"
 )
 
 // Root tabs hosting the existing views; Settings opens as a modal overlay.
@@ -207,7 +208,9 @@ var (
 	docStyle = lipgloss.NewStyle().Padding(1, 2)
 )
 
-func (m rootModel) renderTabs(filterText string, isFiltering bool, filterInput string) string {
+func (m rootModel) renderTabs(filterText string, isFiltering bool, filterInput string, width int) string {
+	const paddingLeft = 2
+	const paddingRight = 2
 	var parts []string
 	for i, t := range m.tabs {
 		var tabText string
@@ -254,8 +257,26 @@ func (m rootModel) renderTabs(filterText string, isFiltering bool, filterInput s
 		tabsRow = tabsRow + filterPlaceholder
 	}
 
-	// Add 2ch left padding to align with help text
-	return lipgloss.NewStyle().PaddingLeft(2).Render(tabsRow)
+	// Add current time and date on the right
+	currentTime := time.Now().Format("Monday, January 2, 2006 15:04:05")
+	timeStr := lipgloss.NewStyle().
+		Foreground(theme.BrightWhite()).
+		Render(currentTime)
+
+	// Right-align the time: calculate spaces needed
+	effectiveWidth := width - paddingLeft - paddingRight // account for left padding
+	tabsWidth := lipgloss.Width(tabsRow)
+	timeWidth := lipgloss.Width(timeStr)
+	spaces := ""
+	if effectiveWidth > tabsWidth+timeWidth {
+		spaces = strings.Repeat(" ", effectiveWidth-tabsWidth-timeWidth)
+	}
+
+	// Join tabs/filter with spaces and time
+	footerLine := tabsRow + spaces + timeStr
+
+	// Add left padding to align with help text
+	return lipgloss.NewStyle().PaddingLeft(paddingLeft).Render(footerLine)
 }
 
 func (m rootModel) View() string {
@@ -281,7 +302,7 @@ func (m rootModel) View() string {
 	}
 
 	// Render tabs at the bottom with filter
-	footer := m.renderTabs(filterText, isFiltering, filterInput)
+	footer := m.renderTabs(filterText, isFiltering, filterInput, m.width)
 
 	// Add bottom padding under the footer
 	footerWithPadding := footer + "\n"

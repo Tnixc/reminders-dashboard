@@ -515,7 +515,7 @@ func (m multiColumnView) View() string {
 		listsView = lipgloss.JoinHorizontal(lipgloss.Center, listsView, "  ", barStyle.Render(rightBar))
 	}
 
-	// Create scroll indicator in subtle color
+	// Create scroll indicator in green
 	var scrollIndicator string
 	if numLists > 0 {
 		leftArrow := ""
@@ -526,12 +526,15 @@ func (m multiColumnView) View() string {
 		if endIndex < numLists {
 			rightArrow = " ▶"
 		}
-		scrollText := leftArrow + fmt.Sprintf("Lists %d-%d of %d", m.startIndex+1, endIndex, numLists) + rightArrow
-		scrollIndicator = barStyle.Render(scrollText)
+		scrollText := leftArrow + fmt.Sprintf("Lists %d-%d of %d", m.startIndex+1, endIndex, numLists) + rightArrow + " "
+		scrollIndicator = lipgloss.NewStyle().Foreground(theme.Green()).Render(scrollText)
 	}
 
+	// Join help line horizontally
+	helpLine := lipgloss.JoinHorizontal(lipgloss.Top, scrollIndicator, helpView)
+
 	// Join vertically - lipgloss handles the layout
-	content := lipgloss.JoinVertical(lipgloss.Left, "\n\n", listsView, scrollIndicator, helpView)
+	content := lipgloss.JoinVertical(lipgloss.Left, "\n\n", listsView, helpLine)
 
 	// Add 2ch left padding and 1 line top padding only
 	paddingStyle := lipgloss.NewStyle().PaddingLeft(2).PaddingTop(1)

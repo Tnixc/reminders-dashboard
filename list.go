@@ -136,6 +136,9 @@ func newListModel() listModel {
 	remindersList.Styles.FilterPrompt = lipgloss.NewStyle()
 	remindersList.Styles.FilterCursor = lipgloss.NewStyle()
 
+	// Remove "No items" text when list is empty
+	remindersList.Styles.NoItems = lipgloss.NewStyle()
+
 	// Keep filtering enabled but filter UI will be hidden
 	remindersList.SetShowFilter(false)
 	remindersList.SetFilteringEnabled(true)
