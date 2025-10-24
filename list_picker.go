@@ -140,7 +140,7 @@ func (lp listPicker) View() string {
 	for i, item := range lp.items {
 		cursor := " "
 		if i == lp.cursor {
-			cursor = "›"
+			cursor = ">"
 		}
 
 		checkbox := "[ ]"
