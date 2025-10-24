@@ -85,10 +85,10 @@ func newMultiColumnView(enabledLists []string) multiColumnView {
 
 	// Create list components for each enabled list
 	var listComponents []listComponent
-	for i, listName := range enabledLists {
+	for _, listName := range enabledLists {
 		component := newListComponent(listName, []list.Item{})
-		// Set title color based on list name (from config) or index fallback
-		color := getListColor(listName, i)
+		// Set title color based on list name (from config) or default
+		color := getListColor(listName, 0) // Use 0 index - getListColor will use config color if available
 		component.SetTitleColor(color)
 		listComponents = append(listComponents, component)
 	}
@@ -163,6 +163,11 @@ func (m *multiColumnView) updateListComponents() {
 				listItems[j] = item
 			}
 			m.listComponents[i].SetItems(listItems)
+			
+			// Update the title color based on first item's color in this list
+			if len(items) > 0 && items[0].color != "" {
+				m.listComponents[i].SetTitleColor(lipgloss.Color(items[0].color))
+			}
 		}
 	}
 }
@@ -196,12 +201,12 @@ func (m *multiColumnView) applyFilter(query string) {
 func (m *multiColumnView) updateEnabledLists(enabledLists []string) {
 	m.enabledLists = enabledLists
 
-	// Recreate list components for new enabled lists
+	// Recreate list components for new enabled lists, preserving colors by name
 	var listComponents []listComponent
-	for i, listName := range enabledLists {
+	for _, listName := range enabledLists {
 		component := newListComponent(listName, []list.Item{})
-		// Set title color based on list name (from config) or index fallback
-		color := getListColor(listName, i)
+		// Set title color based on list name (from config) or default
+		color := getListColor(listName, 0) // Use 0 index - getListColor will use config color if available
 		component.SetTitleColor(color)
 		listComponents = append(listComponents, component)
 	}
@@ -272,20 +277,22 @@ func (m multiColumnView) Update(msg tea.Msg) (multiColumnView, tea.Cmd) {
 			}
 		}
 
-		// Handle focus switching between lists
+		// Handle focus switching between lists using h/l or left/right arrows
 		switch msg.String() {
-		case "tab":
-			// Move focus to next list
+		case "right", "l":
 			if len(m.listComponents) > 0 {
-				m.listComponents[m.focusedIndex].Blur()
+				if m.focusedIndex >= 0 && m.focusedIndex < len(m.listComponents) {
+					m.listComponents[m.focusedIndex].Blur()
+				}
 				m.focusedIndex = (m.focusedIndex + 1) % len(m.listComponents)
 				m.listComponents[m.focusedIndex].Focus()
 			}
 			return m, nil
-		case "shift+tab":
-			// Move focus to previous list
+		case "left", "h":
 			if len(m.listComponents) > 0 {
-				m.listComponents[m.focusedIndex].Blur()
+				if m.focusedIndex >= 0 && m.focusedIndex < len(m.listComponents) {
+					m.listComponents[m.focusedIndex].Blur()
+				}
 				m.focusedIndex--
 				if m.focusedIndex < 0 {
 					m.focusedIndex = len(m.listComponents) - 1
@@ -295,17 +302,13 @@ func (m multiColumnView) Update(msg tea.Msg) (multiColumnView, tea.Cmd) {
 			return m, nil
 		}
 
-		// Handle list navigation keys - map hjkl to arrow keys
+		// Handle list navigation keys - map jk to arrow keys for up/down
 		var mappedMsg tea.Msg = msg
 		switch msg.String() {
-		case "h":
-			mappedMsg = tea.KeyMsg{Type: tea.KeyLeft}
 		case "j":
 			mappedMsg = tea.KeyMsg{Type: tea.KeyDown}
 		case "k":
 			mappedMsg = tea.KeyMsg{Type: tea.KeyUp}
-		case "l":
-			mappedMsg = tea.KeyMsg{Type: tea.KeyRight}
 		}
 
 		switch msg.String() {
@@ -332,12 +335,7 @@ func (m multiColumnView) Update(msg tea.Msg) (multiColumnView, tea.Cmd) {
 		}
 	}
 
-	// Update all list components with other messages
-	for i := range m.listComponents {
-		newComponent, cmd := m.listComponents[i].Update(msg)
-		m.listComponents[i] = newComponent
-		cmds = append(cmds, cmd)
-	}
+	// Don't update other list components - only the focused one should update
 
 	return m, tea.Batch(cmds...)
 }
@@ -347,63 +345,37 @@ func (m multiColumnView) View() string {
 		return ""
 	}
 
-	// Title or filter input
-	var topView string
-	if m.filtering {
-		topView = m.filterInput.View()
-	} else {
-		// Show title, or filter indicator if filtered
-		if m.filterValue != "" {
-			displayValue := m.filterValue
-			if len(displayValue) > 20 {
-				displayValue = displayValue[:17] + "..."
-			}
-			topView = "🔍 " + displayValue
-		} else {
-			topView = titleStyle.Render("Reminders")
-		}
+	// No top view - filter is shown at bottom next to tabs
+
+	// Render help with safe width to avoid overflow
+	helpMaxWidth := m.width
+	if helpMaxWidth > 120 {
+		helpMaxWidth = 120
 	}
+	helpView := m.commonHelp.View(helpMaxWidth)
 
-	// Render help with large width to avoid wrapping
-	helpView := m.commonHelp.View(1000)
-
-	// Compute dynamic list height
-	topHeight := lipgloss.Height(topView)
+	// Compute list height using boxer-provided space (no manual padding)
 	helpHeight := lipgloss.Height(helpView)
-	totalPadding := 2 // vertical padding from appStyle
-	listHeight := m.height - totalPadding - topHeight - helpHeight
+	listHeight := m.height - helpHeight
 	if listHeight < 0 {
 		listHeight = 0
 	}
 
-	// Cap list height to prevent exceeding bubbleboxer line limit (52 lines total)
-	maxListHeight := 45 // Leave buffer for variations in help height
-	if listHeight > maxListHeight {
-		listHeight = maxListHeight
-	}
-
 	// Set size for all list components
-	// Be very conservative with width to avoid bubbleboxer limits (186 chars max)
 	numLists := len(m.listComponents)
 	if numLists == 0 {
 		return ""
 	}
 
-	// Allocate width per list with conservative limits
-	maxListWidth := 35 // Very conservative per-list width
-	listWidth := m.width / numLists
-	if listWidth > maxListWidth {
-		listWidth = maxListWidth
-	}
-	if listWidth < 15 { // Minimum reasonable width for a list
-		listWidth = 15
-	}
+	// Fixed width for each column (instead of dividing screen width)
+	const fixedColumnWidth = 45
+	listWidth := fixedColumnWidth
 
 	for i := range m.listComponents {
 		m.listComponents[i].SetSize(listWidth, listHeight)
 	}
 
-	// Render all list components horizontally with padding above
+	// Render all list components horizontally (no dividers - borders provide separation)
 	var listViews []string
 	for _, component := range m.listComponents {
 		listViews = append(listViews, component.View())
@@ -411,11 +383,8 @@ func (m multiColumnView) View() string {
 
 	listsView := lipgloss.JoinHorizontal(lipgloss.Top, listViews...)
 
-	// Add one line of padding above the columns
-	paddedListsView := "\n" + listsView
+	// Build the layout: lists, then help
+	parts := []string{listsView, helpView}
 
-	// Build the layout: top (title/filter) + padded lists + help
-	parts := []string{topView, paddedListsView, helpView}
-
-	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Left, parts...))
+	return lipgloss.JoinVertical(lipgloss.Left, parts...)
 }
