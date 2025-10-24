@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/sahilm/fuzzy"
 	tint "github.com/lrstanley/bubbletint"
+	"github.com/sahilm/fuzzy"
 )
 
 var (
@@ -27,11 +27,11 @@ var (
 )
 
 type item struct {
-	title       string
-	description string
-	listName    string
-	color       string
-	urgencyText string
+	title        string
+	description  string
+	listName     string
+	color        string
+	urgencyText  string
 	urgencyColor string
 }
 
@@ -118,10 +118,10 @@ type listModel struct {
 	height        int
 
 	// Custom filtering
-	allItems      []list.Item
-	filterValue   string
-	filtering     bool
-	filterInput   textinput.Model
+	allItems    []list.Item
+	filterValue string
+	filtering   bool
+	filterInput textinput.Model
 }
 
 func newListModel() listModel {
@@ -379,5 +379,9 @@ func (m listModel) View() string {
 
 	listView := m.list.View()
 
-	return lipgloss.JoinVertical(lipgloss.Left, listView, helpView)
+	content := lipgloss.JoinVertical(lipgloss.Left, listView, helpView)
+
+	// Add 2ch left padding and 1 line top padding
+	paddingStyle := lipgloss.NewStyle().PaddingLeft(2).PaddingTop(1)
+	return paddingStyle.Render(content)
 }

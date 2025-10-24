@@ -1,10 +1,10 @@
 package main
 
 import (
-	"strings"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"strings"
 )
 
 type listComponent struct {
@@ -88,11 +88,13 @@ func (lc *listComponent) SetItems(items []list.Item) tea.Cmd {
 
 func (lc *listComponent) Focus() {
 	lc.focused = true
+	lc.list.Title = "› " + lc.listName
 	lc.updateCursorStyle()
 }
 
 func (lc *listComponent) Blur() {
 	lc.focused = false
+	lc.list.Title = lc.listName
 	lc.updateCursorStyle()
 }
 
@@ -136,7 +138,7 @@ func (lc listComponent) Update(msg tea.Msg) (listComponent, tea.Cmd) {
 		lc.list = newList
 		return lc, cmd
 	}
-	
+
 	// Update the underlying list
 	newList, cmd := lc.list.Update(msg)
 	lc.list = newList
@@ -159,11 +161,19 @@ func (lc listComponent) View() string {
 	}
 
 	// Add left and right borders with fixed height
+	// Use highlighted border color when focused
+	var borderColor lipgloss.TerminalColor
+	if lc.focused {
+		borderColor = theme.BrightCyan() // Highlighted for focused
+	} else {
+		borderColor = lipgloss.Color("236") // Dark gray/black for unfocused
+	}
+
 	borderStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderLeft(true).
 		BorderRight(true).
-		BorderForeground(lipgloss.Color("236")).  // Dark gray/black
+		BorderForeground(borderColor).
 		Width(lc.width - 2).
 		Height(lc.height)
 

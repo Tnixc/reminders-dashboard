@@ -22,7 +22,7 @@ var listColorMap map[string]string
 
 func loadConfig() error {
 	configPath := filepath.Join(os.ExpandEnv("$HOME"), ".config", "reminders-dashboard", "config.toml")
-	
+
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		// Config file is optional
@@ -174,13 +174,13 @@ func getUniqueLists() ([]string, error) {
 
 func calculateRelativeTime(dueDate time.Time) (string, string) {
 	now := time.Now()
-	
+
 	if dueDate.Before(now) {
 		return "Overdue", "red"
 	}
-	
+
 	diff := dueDate.Sub(now)
-	
+
 	// Determine urgency color
 	urgencyColor := "" // default, no special color
 	if diff <= 24*time.Hour {
@@ -190,11 +190,11 @@ func calculateRelativeTime(dueDate time.Time) (string, string) {
 	} else if diff <= 7*24*time.Hour {
 		urgencyColor = "yellow"
 	}
-	
+
 	// Calculate days and hours
 	days := int(diff.Hours() / 24)
 	hours := int(diff.Hours()) % 24
-	
+
 	// Format the time string
 	var timeStr string
 	if days == 0 {
@@ -224,7 +224,7 @@ func calculateRelativeTime(dueDate time.Time) (string, string) {
 		// Format as weeks and days
 		weeks := days / 7
 		remainingDays := days % 7
-		
+
 		if weeks == 1 {
 			if remainingDays == 0 {
 				timeStr = "1 week"
@@ -243,7 +243,7 @@ func calculateRelativeTime(dueDate time.Time) (string, string) {
 			}
 		}
 	}
-	
+
 	return "Due in " + timeStr, urgencyColor
 }
 

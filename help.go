@@ -8,11 +8,11 @@ import (
 
 // Common key bindings shared across views
 type commonKeyMap struct {
-	filter      key.Binding
-	navigate    key.Binding
-	switchTabs  key.Binding
-	settings    key.Binding
-	quit        key.Binding
+	filter     key.Binding
+	navigate   key.Binding
+	switchTabs key.Binding
+	settings   key.Binding
+	quit       key.Binding
 }
 
 func newCommonKeyMap() commonKeyMap {

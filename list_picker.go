@@ -35,7 +35,7 @@ func newListPicker(lists []string) listPicker {
 	for i, name := range lists {
 		items[i] = listItem{
 			name:    name,
-			enabled: true, // All enabled by default
+			enabled: true,                                // All enabled by default
 			color:   listColorMap[strings.ToLower(name)], // Lookup color
 		}
 	}

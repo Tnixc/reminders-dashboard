@@ -1,12 +1,12 @@
 package main
 
 import (
-	"strings"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sahilm/fuzzy"
+	"strings"
 )
 
 // getListColor returns a color for list titles, preferring config-defined colors
@@ -163,7 +163,7 @@ func (m *multiColumnView) updateListComponents() {
 				listItems[j] = item
 			}
 			m.listComponents[i].SetItems(listItems)
-			
+
 			// Update the title color based on first item's color in this list
 			if len(items) > 0 && items[0].color != "" {
 				m.listComponents[i].SetTitleColor(lipgloss.Color(items[0].color))
@@ -386,5 +386,9 @@ func (m multiColumnView) View() string {
 	// Build the layout: lists, then help
 	parts := []string{listsView, helpView}
 
-	return lipgloss.JoinVertical(lipgloss.Left, parts...)
+	content := lipgloss.JoinVertical(lipgloss.Left, parts...)
+
+	// Add 2ch left padding and 1 line top padding
+	paddingStyle := lipgloss.NewStyle().PaddingLeft(2).PaddingTop(1)
+	return paddingStyle.Render(content)
 }
