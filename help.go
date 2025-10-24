@@ -8,12 +8,11 @@ import (
 
 // Common key bindings shared across views
 type commonKeyMap struct {
-	filter    key.Binding
-	clearFilter key.Binding
-	toggleView key.Binding
-	togglePane key.Binding
-	switchFocus key.Binding
-	quit      key.Binding
+	filter      key.Binding
+	navigate    key.Binding
+	switchTabs  key.Binding
+	settings    key.Binding
+	quit        key.Binding
 }
 
 func newCommonKeyMap() commonKeyMap {
@@ -22,21 +21,17 @@ func newCommonKeyMap() commonKeyMap {
 			key.WithKeys("/"),
 			key.WithHelp("/", "filter"),
 		),
-		clearFilter: key.NewBinding(
-			key.WithKeys("esc"),
-			key.WithHelp("esc", "clear filter"),
+		navigate: key.NewBinding(
+			key.WithKeys("h", "j", "k", "l"),
+			key.WithHelp("hjkl", "navigate"),
 		),
-		toggleView: key.NewBinding(
-			key.WithKeys("v"),
-			key.WithHelp("v", "toggle view"),
-		),
-		togglePane: key.NewBinding(
-			key.WithKeys("s"),
-			key.WithHelp("s", "toggle sidebar"),
-		),
-		switchFocus: key.NewBinding(
+		switchTabs: key.NewBinding(
 			key.WithKeys("tab"),
-			key.WithHelp("tab", "switch focus"),
+			key.WithHelp("tab", "switch tabs"),
+		),
+		settings: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("s", "settings"),
 		),
 		quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
@@ -46,13 +41,13 @@ func newCommonKeyMap() commonKeyMap {
 }
 
 func (k commonKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.filter, k.toggleView, k.togglePane, k.switchFocus, k.quit}
+	return []key.Binding{k.filter, k.navigate, k.switchTabs, k.settings, k.quit}
 }
 
 func (k commonKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.filter, k.clearFilter, k.toggleView, k.togglePane},
-		{k.switchFocus, k.quit},
+		{k.filter, k.navigate, k.switchTabs},
+		{k.settings, k.quit},
 	}
 }
 

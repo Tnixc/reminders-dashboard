@@ -12,33 +12,23 @@ import (
 )
 
 type delegateKeyMap struct {
-	choose key.Binding
 }
 
 func newDelegateKeyMap() *delegateKeyMap {
-	return &delegateKeyMap{
-		choose: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "choose"),
-		),
-	}
+	return &delegateKeyMap{}
 }
 
 // Additional short help entries. This satisfies the help.KeyMap interface and
 // is entirely optional.
 func (d delegateKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{
-		d.choose,
-	}
+	return []key.Binding{}
 }
 
 // Additional full help entries. This satisfies the help.KeyMap interface and
 // is entirely optional.
 func (d delegateKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{
-			d.choose,
-		},
+		{},
 	}
 }
 
@@ -83,33 +73,16 @@ func newItemDelegate(keys *delegateKeyMap) customItemDelegate {
 		Underline(true)
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
-		var title string
-
-		if i, ok := m.SelectedItem().(item); ok {
-			title = i.Title()
-		} else {
-			return nil
-		}
-
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch {
-			case key.Matches(msg, keys.choose):
-				return m.NewStatusMessage(statusMessageStyle("You chose " + title))
-			}
-		}
-
+		// Removed "You chose X" functionality
 		return nil
 	}
 
-	help := []key.Binding{keys.choose}
-
 	d.ShortHelpFunc = func() []key.Binding {
-		return help
+		return []key.Binding{}
 	}
 
 	d.FullHelpFunc = func() [][]key.Binding {
-		return [][]key.Binding{help}
+		return [][]key.Binding{{}}
 	}
 
 	return customItemDelegate{
@@ -235,6 +208,10 @@ func (d customItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 		renderedDesc = descStyle.Render(desc)
 	}
 
+	// Ensure we don't exceed the list's width to avoid boxer overflow
+	maxW := m.Width()
+	renderedTitle = lipgloss.NewStyle().MaxWidth(maxW).Render(renderedTitle)
+	renderedDesc = lipgloss.NewStyle().MaxWidth(maxW).Render(renderedDesc)
 	fmt.Fprintf(w, "%s\n%s", renderedTitle, renderedDesc)
 }
 

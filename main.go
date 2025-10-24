@@ -1,406 +1,318 @@
 package main
 
 import (
-	"fmt"
-	"math/rand"
-	"os"
-	"time"
-
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	boxer "github.com/treilik/bubbleboxer"
+"fmt"
+"os"
+"strings"
+tea "github.com/charmbracelet/bubbletea"
+"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	leftAddr  = "left"
-	rightAddr = "right"
+// Root tabs hosting the existing views; Settings opens as a modal overlay.
+type rootModel struct {
+tabs       []string
+activeTab  int
+width      int
+height     int
+
+// content models
+single listModel
+multi  multiColumnView
+
+// settings overlay
+settingsOpen bool
+picker       listPicker
+
+// shared filter state
+sharedFilter string
+}
+
+func initialModel() rootModel {
+// Build list picker from existing reminders
+lists, err := getUniqueLists()
+if err != nil {
+lists = []string{}
+}
+picker := newListPicker(lists)
+enabled := picker.getEnabledLists()
+
+// Child models
+single := newListModel()
+multi := newMultiColumnView(enabled)
+multi.loadItems()
+
+return rootModel{
+tabs:         []string{"List", "Columns"},
+activeTab:    0,
+single:       single,
+multi:        multi,
+picker:       picker,
+sharedFilter: "",
+}
+}
+
+func (m rootModel) Init() tea.Cmd { return nil }
+
+func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+var cmds []tea.Cmd
+
+switch t := msg.(type) {
+case tea.WindowSizeMsg:
+m.width, m.height = t.Width, t.Height
+
+// Calculate available height for content (tabs at bottom, single line)
+tabHeight := 1           // simple text tabs are 1 line tall
+availableHeight := m.height - tabHeight - 1 // -1 for newline between content and tabs
+
+// Create adjusted size message for children
+adjustedMsg := tea.WindowSizeMsg{Width: t.Width, Height: availableHeight}
+
+// forward to children with adjusted height
+var cmd tea.Cmd
+v, c := m.single.Update(adjustedMsg); m.single = v.(listModel); cmd = c
+cmds = append(cmds, cmd)
+m.multi, cmd = m.multi.Update(adjustedMsg)
+cmds = append(cmds, cmd)
+// picker size
+m.picker.width, m.picker.height = t.Width, t.Height
+
+case tea.KeyMsg:
+if m.settingsOpen {
+// Esc closes settings
+if t.String() == "esc" || t.String() == "q" {
+m.settingsOpen = false
+return m, nil
+}
+}
+
+// Check if any child view is filtering - if so, skip global hotkeys (except ctrl+c)
+isFiltering := false
+if m.activeTab == 0 {
+// Check if single list view is filtering
+isFiltering = m.single.filtering
+} else {
+// Check if multi-column view is filtering
+isFiltering = m.multi.filtering
+}
+
+switch t.String() {
+case "ctrl+c":
+return m, tea.Quit
+case "q":
+if isFiltering {
+break // Let child handle it
+}
+if m.settingsOpen {
+m.settingsOpen = false
+return m, nil
+}
+return m, tea.Quit
+case "s":
+if isFiltering {
+break // Let child handle it
+}
+// toggle settings overlay
+m.settingsOpen = !m.settingsOpen
+return m, nil
+case "tab":
+if isFiltering {
+break // Let child handle it
+}
+if !m.settingsOpen {
+// Save current filter before switching
+if m.activeTab == 0 {
+m.sharedFilter = m.single.filterValue
+} else {
+m.sharedFilter = m.multi.filterValue
+}
+
+// Cycle to next tab (wrap around)
+m.activeTab = (m.activeTab + 1) % len(m.tabs)
+
+// Apply shared filter to new tab
+if m.activeTab == 0 {
+// Switching to single list view - apply shared filter
+m.single.filterInput.SetValue(m.sharedFilter)
+m.single.filterValue = m.sharedFilter
+m.single.applyFilter(m.sharedFilter)
+} else if m.activeTab == 1 {
+// Switching to multi-column view - apply shared filter
+m.multi.filterInput.SetValue(m.sharedFilter)
+m.multi.filterValue = m.sharedFilter
+m.multi.applyFilter(m.sharedFilter)
+
+// ensure focus on first column
+m.multi.focusedIndex = 0
+if len(m.multi.listComponents) > 0 {
+for i := range m.multi.listComponents {
+m.multi.listComponents[i].Blur()
+}
+m.multi.listComponents[0].Focus()
+}
+}
+}
+return m, tea.Batch(cmds...)
+case "shift+tab":
+if isFiltering {
+break // Let child handle it
+}
+if !m.settingsOpen {
+// Cycle to previous tab (wrap around)
+m.activeTab--
+if m.activeTab < 0 {
+m.activeTab = len(m.tabs) - 1
+}
+}
+return m, nil
+}
+
+// route keys to active view when not in settings
+if !m.settingsOpen {
+var cmd tea.Cmd
+if m.activeTab == 0 {
+v, c := m.single.Update(t)
+m.single = v.(listModel)
+cmd = c
+} else {
+m.multi, cmd = m.multi.Update(t)
+}
+cmds = append(cmds, cmd)
+}
+
+case filterChangeMsg:
+// Update filters for both views
+cmd := m.single.reloadWithFilter(t.enabledLists)
+cmds = append(cmds, cmd)
+m.multi.updateEnabledLists(t.enabledLists)
+}
+
+// Update picker if settings open
+if m.settingsOpen {
+v, cmd := m.picker.Update(msg)
+m.picker = v.(listPicker)
+cmds = append(cmds, cmd)
+}
+
+return m, tea.Batch(cmds...)
+}
+
+var (
+// Use tint theme colors
+docStyle = lipgloss.NewStyle().Padding(1, 2)
 )
 
-type model struct {
-	tui            boxer.Boxer
-	showRightPane  bool
-	focusedPane    string // "left", "right", or "multi"
-	lastWindowSize tea.WindowSizeMsg
-	picker         listPicker // Persistent picker state
-	viewMode       string     // "single" or "multi"
-
-	// View-specific models
-	singleList listModel           // For single view mode
-	multiView  multiColumnView     // For multi-column view mode
-}
-
-var quitKeys = key.NewBinding(
-	key.WithKeys("q", "ctrl+c"),
-	key.WithHelp("", "press q to quit"),
-)
-
-func stripErr(n boxer.Node, _ error) boxer.Node {
-	return n
-}
-
-func initialModel() model {
-	// Style the separator with a subtle theme color
-	separatorStyle := lipgloss.NewStyle().
-		Foreground(theme.BrightBlack())
-	boxer.HorizontalSeparator = separatorStyle.Render("│")
-
-	// Get unique lists for the picker
-	lists, err := getUniqueLists()
-	if err != nil {
-		lists = []string{} // Fallback to empty if error
-	}
-
-	// Create picker (will be stored in model for persistence)
-	picker := newListPicker(lists)
-
-	// Get all enabled lists for initial state
-	enabledLists := picker.getEnabledLists()
-
-	// Create the single list model
-	singleListModel := newListModel()
-
-	// Create the multi-column view
-	multiColumnViewModel := newMultiColumnView(enabledLists)
-	multiColumnViewModel.loadItems()
-
-	// Layout tree definition
-	m := model{
-		tui:           boxer.Boxer{},
-		showRightPane: false, // Sidebar closed by default
-		focusedPane:   leftAddr, // Focus left pane
-		picker:        picker,
-		viewMode:      "single", // Start in single view mode
-		singleList:    singleListModel,
-		multiView:     multiColumnViewModel,
-	}
-
-	// Create models for single view
-	left := listModelHolder{m: singleListModel}
-
-	m.tui.LayoutTree = m.buildLayoutTree(left, m.picker)
-
-	return m
-}
-
-func (m *model) buildLayoutTree(left tea.Model, right listPicker) boxer.Node {
-	if m.showRightPane {
-		// Two-pane layout with separator
-		return boxer.Node{
-			VerticalStacked: false, // horizontal split
-			SizeFunc: func(_ boxer.Node, widthOrHeight int) []int {
-				// Split width 66/33
-				ratio := widthOrHeight / 3
-				return []int{2 * ratio, widthOrHeight - (2 * ratio)}
-			},
-			Children: []boxer.Node{
-				stripErr(m.tui.CreateLeaf(leftAddr, left)),
-				stripErr(m.tui.CreateLeaf(rightAddr, right)),
-			},
-		}
-	} else {
-		// Single pane layout - just the left side
-		return stripErr(m.tui.CreateLeaf(leftAddr, left))
-	}
-}
-
-
-func (m model) Init() tea.Cmd {
-	return nil
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if key.Matches(msg, quitKeys) {
-			return m, tea.Quit
-		}
-
-		// Check if list is filtering before processing keybinds
-		isListFiltering := false
-		if m.viewMode == "single" {
-			leftModel, leftOk := m.tui.ModelMap[leftAddr]
-			if leftOk {
-				if holder, ok := leftModel.(listModelHolder); ok {
-					if holder.m.list.FilterState() == list.Filtering {
-						isListFiltering = true
-					}
-				}
-			}
+func (m rootModel) renderTabs(filterText string, isFiltering bool, filterInput string) string {
+	var parts []string
+	for i, t := range m.tabs {
+		var tabText string
+		if i == m.activeTab {
+			// Active tab: highlighted
+			tabText = lipgloss.NewStyle().
+				Foreground(theme.BrightCyan()).
+				Bold(true).
+				Render("[" + t + "]")
 		} else {
-			// In multi-view, check the multiView's filtering state
-			isListFiltering = m.multiView.filtering
+			// Inactive tab: dimmed
+			tabText = lipgloss.NewStyle().
+				Foreground(theme.BrightBlack()).
+				Render("[" + t + "]")
 		}
-
-		// Tab to switch focus between panes (disabled during filtering)
-		if msg.String() == "tab" && m.showRightPane && !isListFiltering {
-			if m.focusedPane == leftAddr {
-				m.focusedPane = rightAddr
-			} else {
-				m.focusedPane = leftAddr
-			}
-			return m, nil
-		}
-
-		// Toggle right pane with 's' key (disabled during filtering)
-		if msg.String() == "s" && !isListFiltering {
-			m.showRightPane = !m.showRightPane
-			if m.showRightPane {
-				m.focusedPane = rightAddr // Focus sidebar when shown
-			} else {
-				m.focusedPane = leftAddr // Focus left pane (regardless of view mode)
-			}
-
-			// Rebuild layout (both views use bubbleboxer now)
-			m.rebuildLayout()
-			// Trigger a resize to update the layout
-			if m.lastWindowSize.Width > 0 {
-				m.tui.UpdateSize(m.lastWindowSize)
-			}
-			return m, nil
-		}
-
-		// Toggle view mode with 'v' key (disabled during filtering)
-		if msg.String() == "v" && !isListFiltering {
-			if m.viewMode == "single" {
-				m.viewMode = "multi"
-				m.focusedPane = leftAddr // Still use leftAddr for multi-view
-				// Reload items in multi-view
-				m.multiView.loadItems()
-			} else {
-				m.viewMode = "single"
-				m.focusedPane = leftAddr
-			}
-
-			// Rebuild layout to switch between models
-			m.rebuildLayout()
-			if m.lastWindowSize.Width > 0 {
-				m.tui.UpdateSize(m.lastWindowSize)
-			}
-			return m, nil
-		}
-
-	case tea.WindowSizeMsg:
-		m.lastWindowSize = msg
-		m.tui.UpdateSize(msg)
-
-		// Also update multi-column view
-		m.multiView, _ = m.multiView.Update(msg)
-
-		// Update picker size for sidebar
-		rightWidth := msg.Width / 3
-		m.picker.width = rightWidth
-		m.picker.height = msg.Height
-
-		return m, nil
-
-	case filterChangeMsg:
-		if m.viewMode == "single" {
-			// Filter changed - reload the left pane
-			var cmd tea.Cmd
-			m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
-				holder := v.(listModelHolder)
-				cmd = holder.m.reloadWithFilter(msg.enabledLists)
-				return holder, nil
-			})
-			return m, cmd
-		} else {
-			// Multi-column view - update enabled lists
-			m.multiView.updateEnabledLists(msg.enabledLists)
-
-			// Update the holder in the model map
-			m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
-				holder := v.(multiColumnViewHolder)
-				holder.m = m.multiView
-				return holder, nil
-			})
-			return m, nil
-		}
+		parts = append(parts, tabText)
 	}
 
-	// Only send keyboard input to the focused pane
-	var cmd tea.Cmd
-	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		// Route keyboard input based on view mode and focus
-		if m.focusedPane == rightAddr && m.showRightPane {
-			// Picker is focused - check if anything is filtering first
-			isListFiltering := false
-			if m.viewMode == "single" {
-				leftModel, leftOk := m.tui.ModelMap[leftAddr]
-				if leftOk {
-					if holder, ok := leftModel.(listModelHolder); ok {
-						if holder.m.list.FilterState() == list.Filtering {
-							isListFiltering = true
-						}
-					}
-				}
-			} else {
-				// Multi-view has its own filtering
-				isListFiltering = m.multiView.filtering
-			}
+	tabsRow := strings.Join(parts, " ")
 
-			// Only update picker if nothing is filtering
-			if !isListFiltering {
-				updatedPicker, pickerCmd := m.picker.Update(keyMsg)
-				m.picker = updatedPicker.(listPicker)
-				cmds = append(cmds, pickerCmd)
-
-				// Also update in the boxer model map
-				m.editModel(rightAddr, func(v tea.Model) (tea.Model, error) {
-					return m.picker, nil
-				})
-			}
-		} else if m.focusedPane == leftAddr {
-			// Left pane focused - could be single list or multi-column view
-			if m.viewMode == "single" {
-				// Single view mode - route to list
-				m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
-					v, cmd = v.Update(keyMsg)
-					cmds = append(cmds, cmd)
-					return v, nil
-				})
-			} else {
-				// Multi-column view - route through editModel to update holder
-				m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
-					holder := v.(multiColumnViewHolder)
-					holder.m, cmd = holder.m.Update(keyMsg)
-					cmds = append(cmds, cmd)
-					// Update the main model's copy too
-					m.multiView = holder.m
-					return holder, nil
-				})
-			}
+	// Always show filter (prevents newline when toggling filter)
+	if isFiltering {
+		// Show filter input box with cursor
+		cursor := "_"
+		filterBox := lipgloss.NewStyle().
+			Foreground(theme.BrightCyan()).
+			Render(" / " + filterInput + cursor)
+		tabsRow = tabsRow + filterBox
+	} else if filterText != "" {
+		// Show filter indicator
+		displayValue := filterText
+		if len(displayValue) > 30 {
+			displayValue = displayValue[:27] + "..."
 		}
+		filterIndicator := lipgloss.NewStyle().
+			Foreground(theme.Yellow()).
+			Render(" " + displayValue)
+		tabsRow = tabsRow + filterIndicator
 	} else {
-		// Non-keyboard messages go to all panes
-		m.editModel(leftAddr, func(v tea.Model) (tea.Model, error) {
-			v, cmd = v.Update(msg)
-			cmds = append(cmds, cmd)
-
-			// If multi-view, sync back to main model
-			if m.viewMode == "multi" {
-				if holder, ok := v.(multiColumnViewHolder); ok {
-					m.multiView = holder.m
-				}
-			}
-			return v, nil
-		})
-
-		if m.showRightPane {
-			// Update picker with non-keyboard messages
-			updatedPicker, pickerCmd := m.picker.Update(msg)
-			m.picker = updatedPicker.(listPicker)
-			cmds = append(cmds, pickerCmd)
-
-			// Also update in the boxer model map
-			m.editModel(rightAddr, func(v tea.Model) (tea.Model, error) {
-				return m.picker, nil
-			})
-		}
+		// Show empty filter placeholder to prevent layout shift
+		filterPlaceholder := lipgloss.NewStyle().
+			Foreground(theme.BrightBlack()).
+			Render(" /")
+		tabsRow = tabsRow + filterPlaceholder
 	}
 
-	return m, tea.Batch(cmds...)
+	return tabsRow
 }
 
-func (m *model) rebuildLayout() {
-	// Store picker dimensions before clearing
-	pickerWidth := m.picker.width
-	pickerHeight := m.picker.height
+func (m rootModel) View() string {
+// Get filter text and filtering status from active view
+var filterText string
+var isFiltering bool
+var filterInput string
 
-	// Clear the model map
-	m.tui.ModelMap = make(map[string]tea.Model)
-
-	// Restore picker dimensions
-	m.picker.width = pickerWidth
-	m.picker.height = pickerHeight
-
-	if m.viewMode == "single" {
-		// Single view - use list model
-		leftHolder := listModelHolder{m: m.singleList}
-		m.tui.LayoutTree = m.buildLayoutTree(leftHolder, m.picker)
-	} else {
-		// Multi-column view - use multi-column model
-		multiHolder := multiColumnViewHolder{m: m.multiView}
-		m.tui.LayoutTree = m.buildLayoutTree(multiHolder, m.picker)
-	}
-
-	// Update picker size if sidebar is shown and we have window size
-	if m.showRightPane && m.lastWindowSize.Width > 0 {
-		rightWidth := m.lastWindowSize.Width / 3
-		m.picker.width = rightWidth
-		m.picker.height = m.lastWindowSize.Height
-	}
+if m.activeTab == 0 {
+// Single list view
+isFiltering = m.single.filtering
+filterText = m.single.filterValue
+if isFiltering {
+filterInput = m.single.filterInput.Value()
+}
+} else {
+// Multi-column view
+isFiltering = m.multi.filtering
+filterText = m.multi.filterValue
+if isFiltering {
+filterInput = m.multi.filterInput.Value()
+}
 }
 
-func (m model) View() string {
-	// Always use bubbleboxer - it handles both single and multi view
-	return m.tui.View()
+// Background view from active tab
+var body string
+if m.activeTab == 0 {
+body = m.single.View()
+} else {
+body = m.multi.View()
 }
 
-func (m *model) editModel(addr string, edit func(tea.Model) (tea.Model, error)) error {
-	if edit == nil {
-		return fmt.Errorf("no edit function provided")
-	}
-	v, ok := m.tui.ModelMap[addr]
-	if !ok {
-		return fmt.Errorf("no model with address '%s' found", addr)
-	}
-	v, err := edit(v)
-	if err != nil {
-		return err
-	}
-	m.tui.ModelMap[addr] = v
-	return nil
+// Render tabs at the bottom with filter
+footer := m.renderTabs(filterText, isFiltering, filterInput)
+
+// Calculate available height for content (tabs at bottom, single line)
+footerHeight := lipgloss.Height(footer)
+availableHeight := m.height - footerHeight - 1 // -1 for newline
+
+// Place content to fill available width and height
+content := lipgloss.Place(m.width, availableHeight, lipgloss.Left, lipgloss.Top, body)
+
+if !m.settingsOpen {
+return content + "\n" + footer
 }
 
-// listModelHolder wraps listModel to satisfy tea.Model
-type listModelHolder struct {
-	m listModel
-}
+// Settings modal (use existing picker styled by theme)
+modal := lipgloss.NewStyle().
+Border(lipgloss.NormalBorder()).
+BorderForeground(theme.BrightCyan()).
+Padding(0, 0).
+Render(m.picker.View())
 
-func (l listModelHolder) Init() tea.Cmd {
-	return l.m.Init()
+// Simple centered modal substitute
+_ = lipgloss.Width(modal)
+boxed := lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, modal)
+dimmed := lipgloss.NewStyle().Foreground(theme.BrightBlack()).Render(content + "\n" + footer)
+return dimmed + "\n" + boxed
 }
-
-func (l listModelHolder) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	m, cmd := l.m.Update(msg)
-	l.m = m.(listModel)
-	return l, cmd
-}
-
-func (l listModelHolder) View() string {
-	return l.m.View()
-}
-
-// multiColumnViewHolder wraps multiColumnView to satisfy tea.Model
-type multiColumnViewHolder struct {
-	m multiColumnView
-}
-
-func (mc multiColumnViewHolder) Init() tea.Cmd {
-	return mc.m.Init()
-}
-
-func (mc multiColumnViewHolder) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	m, cmd := mc.m.Update(msg)
-	mc.m = m
-	return mc, cmd
-}
-
-func (mc multiColumnViewHolder) View() string {
-	return mc.m.View()
-}
-
 
 func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+if _, err := p.Run(); err != nil {
+fmt.Println("Error running program:", err)
+os.Exit(1)
+}
 }

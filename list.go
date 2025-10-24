@@ -3,8 +3,10 @@ package main
 import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/sahilm/fuzzy"
 	tint "github.com/lrstanley/bubbletint"
 )
 
@@ -114,6 +116,12 @@ type listModel struct {
 	commonHelp    commonHelp
 	width         int
 	height        int
+
+	// Custom filtering
+	allItems      []list.Item
+	filterValue   string
+	filtering     bool
+	filterInput   textinput.Model
 }
 
 func newListModel() listModel {
@@ -130,11 +138,22 @@ func newListModel() listModel {
 		items = []list.Item{}
 	}
 
+	// Create text input for filtering
+	ti := textinput.New()
+	ti.Placeholder = "Filter..."
+	ti.Prompt = "/"
+	ti.CharLimit = 100
+	ti.Width = 1000 // Prevent wrapping
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(theme.BrightCyan())
+	ti.TextStyle = lipgloss.NewStyle().Foreground(theme.Fg())
+	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(theme.BrightBlack())
+
 	// Setup list
 	delegate := newItemDelegate(delegateKeys)
 	remindersList := list.New(items, delegate, 0, 0)
-	remindersList.Title = "Reminders"
+	remindersList.Title = ""
 	remindersList.Styles.Title = titleStyle
+	remindersList.SetShowTitle(false)
 
 	// Customize list styles with theme colors
 	remindersList.Styles.PaginationStyle = lipgloss.NewStyle().
@@ -151,11 +170,13 @@ func newListModel() listModel {
 		Foreground(theme.BrightBlack()).
 		SetString("•")
 
-	remindersList.Styles.FilterPrompt = lipgloss.NewStyle().
-		Foreground(theme.BrightCyan())
+	// Make filter UI use empty strings - we show it at bottom instead
+	remindersList.Styles.FilterPrompt = lipgloss.NewStyle()
+	remindersList.Styles.FilterCursor = lipgloss.NewStyle()
 
-	remindersList.Styles.FilterCursor = lipgloss.NewStyle().
-		Foreground(theme.BrightCyan())
+	// Keep filtering enabled but filter UI will be hidden
+	remindersList.SetShowFilter(false)
+	remindersList.SetFilteringEnabled(true)
 
 	// Customize the help view styles
 	remindersList.Help.Styles.ShortKey = lipgloss.NewStyle().
@@ -198,6 +219,10 @@ func newListModel() listModel {
 		delegateKeys:  delegateKeys,
 		itemGenerator: &itemGenerator,
 		commonHelp:    newCommonHelp(),
+		allItems:      items,
+		filterInput:   ti,
+		filtering:     false,
+		filterValue:   "",
 	}
 }
 
@@ -224,10 +249,44 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		h, v := appStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v-1) // Reserve 1 line for help
+		m.list.SetSize(msg.Width, msg.Height)
 
 	case tea.KeyMsg:
+		// Handle custom filtering
+		if m.filtering {
+			switch msg.String() {
+			case "esc":
+				m.filtering = false
+				m.filterInput.Blur()
+				return m, nil
+			case "enter":
+				m.filtering = false
+				m.filterInput.Blur()
+				m.applyFilter(m.filterInput.Value())
+				return m, nil
+			default:
+				newFilterInput, cmd := m.filterInput.Update(msg)
+				m.filterInput = newFilterInput
+				cmds = append(cmds, cmd)
+				return m, tea.Batch(cmds...)
+			}
+		}
+
+		// Handle "/" to start filtering
+		if msg.String() == "/" {
+			m.filtering = true
+			m.filterInput.Focus()
+			return m, nil
+		}
+
+		// Handle "esc" to clear filter
+		if msg.String() == "esc" && m.filterValue != "" {
+			m.filterInput.SetValue("")
+			m.filterValue = ""
+			m.applyFilter("")
+			return m, nil
+		}
+
 		// Don't match any of the keys below if we're actively filtering.
 		if m.list.FilterState() == list.Filtering {
 			break
@@ -273,24 +332,52 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m *listModel) applyFilter(query string) {
+	m.filterValue = query
+
+	var filteredItems []list.Item
+	if query == "" {
+		filteredItems = m.allItems
+	} else {
+		// Fuzzy search across all items
+		var searchStrings []string
+		for _, listItem := range m.allItems {
+			if it, ok := listItem.(item); ok {
+				searchStrings = append(searchStrings, it.title)
+			}
+		}
+
+		matches := fuzzy.Find(query, searchStrings)
+
+		filteredItems = make([]list.Item, len(matches))
+		for i, match := range matches {
+			filteredItems[i] = m.allItems[match.Index]
+		}
+	}
+
+	m.list.SetItems(filteredItems)
+}
+
 func (m listModel) View() string {
-	// Render help with large width to avoid wrapping
-	helpView := m.commonHelp.View(1000)
+	// Render help with safe width to avoid overflow in boxer
+	helpMaxWidth := m.list.Width()
+	if helpMaxWidth == 0 || helpMaxWidth > m.width {
+		helpMaxWidth = m.width
+	}
+	if helpMaxWidth > 120 {
+		helpMaxWidth = 120
+	}
+	helpView := m.commonHelp.View(helpMaxWidth)
 	helpHeight := lipgloss.Height(helpView)
 
-	// Compute dynamic list height
-	_, v := appStyle.GetFrameSize()
-	listHeight := m.height - v - helpHeight
+	// Compute sizes from current boxer leaf (no manual padding math)
+	listHeight := m.height - helpHeight
 	if listHeight < 0 {
 		listHeight = 0
 	}
-
-	// Update list size dynamically
-	h, _ := appStyle.GetFrameSize()
-	listWidth := m.width - h
-	m.list.SetSize(listWidth, listHeight)
+	m.list.SetSize(m.width, listHeight)
 
 	listView := m.list.View()
 
-	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Left, listView, helpView))
+	return lipgloss.JoinVertical(lipgloss.Left, listView, helpView)
 }
