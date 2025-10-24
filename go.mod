@@ -1,4 +1,4 @@
-module github.com/charmbracelet/bubbletea-app-template
+module github.com/tnixc/reminders-dashboard
 
 go 1.24.0
 
