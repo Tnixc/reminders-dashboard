@@ -435,9 +435,9 @@ func (m multiColumnView) View() string {
 	helpView := m.commonHelp.View(helpMaxWidth)
 
 	// Account for padding when calculating available space
-	// We have 1 line top padding for the whole view + 1 line padding above columns
+	// We have 1 line top padding for the whole view + 2 lines padding above columns
 	const topPadding = 1
-	const columnTopPadding = 1
+	const columnTopPadding = 2
 	helpHeight := lipgloss.Height(helpView)
 
 	// Available height for lists = total height - help height - top padding - column top padding
@@ -531,7 +531,7 @@ func (m multiColumnView) View() string {
 	}
 
 	// Join vertically - lipgloss handles the layout
-	content := lipgloss.JoinVertical(lipgloss.Left, "\n", listsView, scrollIndicator, helpView)
+	content := lipgloss.JoinVertical(lipgloss.Left, "\n\n", listsView, scrollIndicator, helpView)
 
 	// Add 2ch left padding and 1 line top padding only
 	paddingStyle := lipgloss.NewStyle().PaddingLeft(2).PaddingTop(1)
