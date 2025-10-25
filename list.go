@@ -13,7 +13,7 @@ import (
 
 var (
 	// Theme for the app
-	theme = tint.TintSerendipityMidnight
+	theme = tint.TintRosePine
 
 	appStyle = lipgloss.NewStyle().Padding(1, 2)
 
@@ -88,6 +88,9 @@ type listModel struct {
 	filterValue string
 	filtering   bool
 	filterInput textinput.Model
+
+	// Status line
+	status string
 }
 
 func newListModel() listModel {
@@ -178,6 +181,7 @@ func newListModel() listModel {
 		filterInput:  ti,
 		filtering:    false,
 		filterValue:  "",
+		status:       "",
 	}
 }
 
@@ -325,8 +329,20 @@ func (m listModel) View() string {
 
 	listView := m.list.View()
 
-	// Join vertically - lipgloss handles the layout
-	content := lipgloss.JoinVertical(lipgloss.Left, listView, helpView)
+	var content string
+	if helpHeight == 1 && m.status != "" {
+		// Help is one line, add status on the right
+		helpWidth := lipgloss.Width(helpView)
+		statusWidth := m.width - helpWidth - 2 // account for left padding
+		if statusWidth < 0 {
+			statusWidth = 0
+		}
+		statusRight := lipgloss.NewStyle().Width(statusWidth).Align(lipgloss.Right).Render(m.status)
+		helpWithStatus := helpView + statusRight
+		content = lipgloss.JoinVertical(lipgloss.Left, listView, helpWithStatus)
+	} else {
+		content = lipgloss.JoinVertical(lipgloss.Left, listView, helpView)
+	}
 
 	// Add 2ch left padding and 1 line top padding only
 	paddingStyle := lipgloss.NewStyle().PaddingLeft(2).PaddingTop(1)

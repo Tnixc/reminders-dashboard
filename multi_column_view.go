@@ -66,6 +66,9 @@ type multiColumnView struct {
 	// Help
 	commonHelp commonHelp
 
+	// Status line
+	status string
+
 	// Dimensions
 	width  int
 	height int
@@ -105,6 +108,7 @@ func newMultiColumnView(enabledLists []string) multiColumnView {
 		filtering:      false,
 		filterValue:    "",
 		commonHelp:     newCommonHelp(),
+		status:         "",
 		focusedIndex:   0, // Focus first list by default
 		startIndex:     0,
 	}
@@ -532,6 +536,17 @@ func (m multiColumnView) View() string {
 
 	// Join help line horizontally
 	helpLine := lipgloss.JoinHorizontal(lipgloss.Top, scrollIndicator, helpView)
+
+	// Add status on the right if help is one line and status exists
+	if lipgloss.Height(helpLine) == 1 && m.status != "" {
+		helpWidth := lipgloss.Width(helpLine)
+		statusWidth := m.width - helpWidth - 2 // account for left padding
+		if statusWidth < 0 {
+			statusWidth = 0
+		}
+		statusRight := lipgloss.NewStyle().Width(statusWidth).Align(lipgloss.Right).Render(m.status)
+		helpLine = helpLine + statusRight
+	}
 
 	// Join vertically - lipgloss handles the layout
 	content := lipgloss.JoinVertical(lipgloss.Left, "\n\n", listsView, helpLine)

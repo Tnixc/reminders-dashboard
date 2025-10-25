@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -11,6 +12,14 @@ import (
 	"strings"
 	"time"
 )
+
+type weatherMsg string
+
+func fetchWeatherCmd() tea.Cmd {
+	return tea.Cmd(func() tea.Msg {
+		return weatherMsg(getWeather())
+	})
+}
 
 // Root tabs hosting the existing views; Settings opens as a modal overlay.
 type rootModel struct {
@@ -39,6 +48,10 @@ type rootModel struct {
 
 	// shared filter state
 	sharedFilter string
+
+	// weather
+	weather string
+	spinner spinner.Model
 
 	// alerts
 	alert bubbleup.AlertModel
@@ -80,6 +93,13 @@ func initialModel() rootModel {
 	// Alerts
 	alert := *bubbleup.NewAlertModel(80, true)
 
+	// Spinner
+	s := spinner.New()
+	s.Spinner = spinner.Spinner{
+		Frames: []string{"|", "/", "-", "\\"},
+		FPS:    time.Second / 4,
+	}
+
 	return rootModel{
 		tabs:         []string{"List", "Columns"},
 		activeTab:    0,
@@ -95,11 +115,15 @@ func initialModel() rootModel {
 		editDelete:   false,
 		editItem:     nil,
 		sharedFilter: "",
+		weather:      "Loading...",
+		spinner:      s,
 		alert:        alert,
 	}
 }
 
-func (m rootModel) Init() tea.Cmd { return m.alert.Init() }
+func (m rootModel) Init() tea.Cmd {
+	return tea.Batch(m.alert.Init(), m.spinner.Tick, fetchWeatherCmd())
+}
 
 func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
@@ -391,6 +415,16 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd := m.single.reloadWithFilter(t.enabledLists)
 		cmds = append(cmds, cmd)
 		m.multi.updateEnabledLists(t.enabledLists)
+
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
+	case weatherMsg:
+		m.weather = string(t)
+		return m, nil
+
 	}
 
 	// Update picker if settings open
@@ -463,10 +497,12 @@ func (m rootModel) renderTabs(filterText string, isFiltering bool, filterInput s
 	}
 
 	// Add current time and date on the right
-	currentTime := time.Now().Format("Monday, January 2, 2006 15:04:05")
-	timeStr := lipgloss.NewStyle().
-		Foreground(theme.BrightWhite()).
-		Render(currentTime)
+	now := time.Now()
+	dateStr := now.Format("Monday, January 2, 2006")
+	timeStr := now.Format("15:04:05")
+	dateStyled := lipgloss.NewStyle().Foreground(theme.BrightCyan()).Render("󰃭 " + dateStr)
+	timeStyled := lipgloss.NewStyle().Foreground(theme.BrightYellow()).Render("  " + timeStr)
+	timeStr = dateStyled + timeStyled
 
 	// Right-align the time: calculate spaces needed
 	effectiveWidth := width - paddingLeft - paddingRight // account for left padding
@@ -511,6 +547,24 @@ func (m rootModel) View() string {
 
 	// Add bottom padding under the footer
 	footerWithPadding := footer + "\n"
+
+	// Status line with greeting, username, and weather
+	greetingStyled := lipgloss.NewStyle().Foreground(theme.BrightCyan()).Render(getGreeting())
+	usernameStyled := lipgloss.NewStyle().Foreground(theme.BrightYellow()).Render(" " + titleCase(getUsername()) + ".")
+	var weatherStyled string
+	if m.weather == "Loading..." {
+		weatherStyled = lipgloss.NewStyle().Foreground(theme.BrightGreen()).Render(" " + m.spinner.View() + " Loading weather...")
+	} else {
+		weatherStyled = lipgloss.NewStyle().Foreground(theme.BrightGreen()).Render(" " + m.weather)
+	}
+	statusStyled := greetingStyled + usernameStyled + weatherStyled + "  "
+
+	// Set status in the active view
+	if m.activeTab == 0 {
+		m.single.status = statusStyled
+	} else {
+		m.multi.status = statusStyled
+	}
 
 	// Background view from active tab
 	var body string
